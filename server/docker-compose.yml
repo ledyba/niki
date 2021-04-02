@@ -6,8 +6,8 @@ services:
     container_name: 'niki_flyway'
     restart: 'no'
     volumes:
-      - ./db/flyway/sql:/flyway/sql
-      - ./db/flyway/conf:/flyway/conf
+      - ./db/flyway_data/sql:/flyway/sql
+      - ./db/flyway_data/conf:/flyway/conf
     networks:
       - 'default'
 
@@ -18,7 +18,7 @@ services:
       context: './docker/images/mysql'
     environment:
       MYSQL_DATABASE: 'niki'
-      MYSQL_ROOT_PASSWORD: 'niki'
+      MYSQL_ROOT_PASSWORD: 'root'
       MYSQL_USER: 'niki'
       MYSQL_PASSWORD: 'niki'
       MYSQL_USER_ID: '${UID}'
@@ -28,6 +28,7 @@ services:
       - '--collation-server=utf8mb4_unicode_ci'
     volumes:
       - './var/mysql:/var/lib/mysql'
+      - './db/helpers:/helpers'
     ports:
       - '3306:3306'
     networks:
