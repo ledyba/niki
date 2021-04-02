@@ -6,9 +6,8 @@ set -o pipefail
 REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && cd .. && pwd)"
 cd "${REPO_DIR}"
 
-docker-compose run \
+UID=$(id -u "${UID}") GID=$(id -g "${UID}") docker-compose run \
   --rm \
-  "--user=$(id -u $USER):$(id -g $USER)" \
   db \
   mysql '--protocol=tcp' \
         '--user=niki' '--password=niki' \

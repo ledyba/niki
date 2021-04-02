@@ -6,9 +6,8 @@ up: var/mysql
 
 .PHONY: wait
 wait:
-	docker-compose run \
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose run \
 		--rm \
-		"--user=$(shell id -u $USER):$(shell id -g $USER)" \
 		db \
 		bash /helpers/wait-boot.sh
 
