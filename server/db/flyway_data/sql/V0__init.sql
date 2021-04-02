@@ -4,6 +4,8 @@ USE `niki`;
 
 CREATE TABLE `texts` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `text` LONGTEXT NOT NULL,
+  `date` date NOT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
