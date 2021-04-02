@@ -1,0 +1,40 @@
+---
+version: '3.7'
+services:
+  flyway:
+    image: 'flyway/flyway:7.3.1'
+    container_name: 'niki_flyway'
+    restart: 'no'
+    volumes:
+      - ./db/flyway/sql:/flyway/sql
+      - ./db/flyway/conf:/flyway/conf
+    networks:
+      - 'default'
+
+  db:
+    image: 'niki_mysql'
+    container_name: 'niki_db'
+    build:
+      context: './docker/images/mysql'
+    environment:
+      MYSQL_DATABASE: 'niki'
+      MYSQL_ROOT_PASSWORD: 'niki'
+      MYSQL_USER: 'niki'
+      MYSQL_PASSWORD: 'niki'
+      MYSQL_USER_ID: '${UID}'
+      MYSQL_GROUP_ID: '${GID}'
+    command:
+      - '--character-set-server=utf8mb4'
+      - '--collation-server=utf8mb4_unicode_ci'
+    volumes:
+      - './var/mysql:/var/lib/mysql'
+    ports:
+      - '3306:3306'
+    networks:
+      - 'default'
+    tty: true
+    stdin_open: true
+
+networks:
+  default:
+    external: false
