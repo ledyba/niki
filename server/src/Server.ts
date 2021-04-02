@@ -1,8 +1,5 @@
 import express from 'express';
-import * as sqlite from 'sqlite';
-import sqlite3 from 'sqlite3';
-
-import mysql from 'promise-mysql';
+import mysql from 'mysql2/promise';
 
 /**
 # express docs
@@ -16,8 +13,8 @@ export default class Server {
   private readonly hostname: string
   private readonly port: number;
   private app: express.Express;
-  private db: sqlite.Database;
-  private constructor(db: sqlite.Database, hostname: string, port: number) {
+  private db: mysql.Pool;
+  private constructor(db: mysql.Pool, hostname: string, port: number) {
     this.hostname = hostname;
     this.port = port;
     this.app = express();
@@ -37,7 +34,10 @@ export default class Server {
   }
 
   /* API endpoints */
-  private list(req: express.Request, resp: express.Response) {
+  private async list(req: express.Request, resp: express.Response) {
+    const conn = await this.db.getConnection()
+    const result = await conn.query("select * from texts");
+    result.map(it => console.log(it));
     resp.send({"test": "test"});
   }
 
@@ -52,9 +52,12 @@ export default class Server {
     });
   }
   static async create(hostname: string, port: number): Promise<Server> {
-    const db = await sqlite.open({
-      filename: ":memory:",
-      driver: sqlite3.Database,
+    const db = await mysql.createPool({
+      host: "localhost",
+      port: 3306,
+      user: "niki",
+      password: "niki",
+      database: "niki",
     });
     return new Server(db, hostname, port);
   }
