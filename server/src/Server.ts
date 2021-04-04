@@ -1,5 +1,7 @@
 import express from 'express';
-import mysql from 'mysql2/promise';
+import mysql, {RowDataPacket} from 'mysql2/promise';
+import dayjs from 'dayjs';
+import * as bridge from 'bridge';
 
 /**
 # express docs
@@ -27,6 +29,7 @@ export default class Server {
     this.app.use(express.urlencoded({ extended: true }));
 
     // API endpoints
+    this.app.use('/api/index', this.index.bind(this))
     this.app.use('/api/list', this.list.bind(this))
 
     // Client files
@@ -34,11 +37,26 @@ export default class Server {
   }
 
   /* API endpoints */
+  private async index(req: express.Request, resp: express.Response) {
+    const r: bridge.Index.Response = {
+      months: [""],
+    };
+    resp.send(r);
+  }
   private async list(req: express.Request, resp: express.Response) {
     const conn = await this.db.getConnection()
-    const result = await conn.query("select * from texts");
-    result.map(it => console.log(it));
-    resp.send({"test": "test"});
+    const result = await conn.query("select `id`, `text`,`date` from texts");
+    const rows = result[0] as RowDataPacket[]
+    const obj: Array<any> = [];
+    rows.forEach((it) => {
+      const date = dayjs(it["date"] as Date);
+      obj.push({
+        id: it["id"] as number,
+        text: it["text"] as string,
+        date: date.format("YYYY/MM/DD"),
+      });
+    })
+    resp.send(obj);
   }
 
   /* from out */
