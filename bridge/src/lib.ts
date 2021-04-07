@@ -1,10 +1,10 @@
-namespace Index {
+export namespace Index {
   export interface Response {
     months: [string],
   }
 }
 
-namespace Post {
+export namespace Post {
   export interface Request {
     month: string,
     body: string,

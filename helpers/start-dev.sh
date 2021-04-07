@@ -11,5 +11,5 @@ function kill_all() {
 }
 
 (cd ../client && npm run watch &)
-npm run server &
+(cd ../server && npm run watch &)
 wait
