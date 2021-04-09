@@ -4,9 +4,10 @@
   "description": "A simple diary",
   "main": "main.js",
   "scripts": {
-    "dev": "bash ./helpers/start-dev.sh",
-    "server": "ts-node-dev src/main.ts",
-    "build": "cd client && npm run build"
+    "dev": "cd .. && bash ./helpers/start-dev.sh",
+    "watch": "ts-node-dev src/main.ts",
+    "server": "ts-node src/main.ts",
+    "build": "tsc"
   },
   "author": "Kaede Fujisaki",
   "license": "AGPL-3.0-or-later",

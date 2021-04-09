@@ -1,6 +1,7 @@
 #!/bin/bash
 
-SRV_DIR="$(cd "$(readlink -f "$(dirname "$0")")" && cd .. && pwd)"
+ROOT_DIR="$(cd "$(readlink -f "$(dirname "$0")")" && cd .. && pwd)"
+cd "${ROOT_DIR}" || exit 1
 
 trap kill_all SIGINT
 
@@ -10,6 +11,6 @@ function kill_all() {
   kill 0 > /dev/null 2>&1
 }
 
-(cd ../client && npm run watch &)
-(cd ../server && npm run watch &)
+(cd client && npm run watch &)
+(cd server && npm run watch &)
 wait
