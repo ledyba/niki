@@ -2,6 +2,7 @@ import express from 'express';
 import mysql, {RowDataPacket} from 'mysql2/promise';
 import dayjs from 'dayjs';
 import * as bridge from 'bridge';
+import Repo from "./repo/Repo";
 
 /**
 # express docs
@@ -25,33 +26,42 @@ export default class Server {
   }
 
   private setup() {
-    this.app.use(express.json())
+    this.app.set('etag', false);
+    this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
 
     // API endpoints
-    this.app.use('/api/index', this.index.bind(this))
-    this.app.use('/api/list', this.list.bind(this))
+    this.app.use('/api/index', this.index.bind(this));
+    this.app.use('/api/list', this.list.bind(this));
 
     // Client files
-    this.app.use(express.static("../client/dist"))
+    this.app.use(express.static("../client/dist", {
+      etag: false
+    }));
   }
 
   /* API endpoints */
   private async index(req: express.Request, resp: express.Response) {
+    const conn = await this.db.getConnection()
+    const repo = new Repo(conn);
+    const now = dayjs();
+    const months = (await repo.allMonth()).map((it) => it.toString());
+    const texts =await repo.readDiaries(now.year(), now.month() + 1);
     const r: bridge.Index.Response = {
-      months: [""],
+      months: months,
+      texts: texts,
     };
     resp.send(r);
   }
   private async list(req: express.Request, resp: express.Response) {
     const conn = await this.db.getConnection()
-    const result = await conn.query("select `id`, `text`,`date` from texts");
+    // language=MySQL
+    const result = await conn.query("select `date`, `text` from texts");
     const rows = result[0] as RowDataPacket[]
     const obj: Array<any> = [];
     rows.forEach((it) => {
       const date = dayjs(it["date"] as Date);
       obj.push({
-        id: it["id"] as number,
         text: it["text"] as string,
         date: date.format("YYYY/MM/DD"),
       });
@@ -60,7 +70,7 @@ export default class Server {
   }
 
   /* from out */
-  async start(): Promise<void> {
+  start(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       try {
         this.app.listen(this.port, this.hostname, () => { resolve(); });

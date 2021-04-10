@@ -1,6 +1,16 @@
+export namespace Entity {
+  export interface Diary {
+    year: number;
+    month: number;
+    day: number;
+    text: string;
+  }
+}
+
 export namespace Index {
   export interface Response {
-    months: [string],
+    months: Array<string>,
+    texts: Array<Entity.Diary>
   }
 }
 
