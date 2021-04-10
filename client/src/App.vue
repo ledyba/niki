@@ -1,5 +1,4 @@
 <template>
-  {{ msg }}
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
@@ -13,15 +12,12 @@ import {defineComponent} from "vue";
 const App = defineComponent({
   components: {
   },
-  data: function () {
-    return {
-      msg: "Helloa",
-    };
+  data() {
+    return {};
   },
-  props: {'msg1': String}
+  props: {}
 });
 export default App;
-defineComponent()
 </script>
 
 <style lang="scss">

@@ -1,18 +1,35 @@
 <template>
   <div class="home">
-    <MonthEntry year="2021" month="20" />
+    <MonthList v-bind:months="resp.months" />
   </div>
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component';
-import HelloWorld from '@/components/HelloWorld.vue'; // @ is an alias to /src
-import MonthEntry from "@/components/MonthEntry.vue";
+import MonthList from "@/components/MonthList.vue";
+import * as bridge from 'bridge'
+import {defineComponent} from "vue";
 
-@Options({
+async function callHome(): Promise<bridge.Index.Response> {
+  const raw = await fetch('/api/index')
+  const json = await raw.json()
+  return json as bridge.Index.Response;
+}
+
+const Home = defineComponent({
   components: {
-    MonthEntry,
+    MonthList,
+  },
+  data() {
+    return {
+      resp: {} as bridge.Index.Response,
+    };
+  },
+  created() {
+    callHome()
+        .then((resp) => {
+          this.resp = resp;
+        });
   },
 })
-export default class Home extends Vue {}
+export default Home;
 </script>
