@@ -1,16 +1,20 @@
 #!/bin/bash
-
 ROOT_DIR="$(cd "$(readlink -f "$(dirname "$0")")" && cd .. && pwd)"
 cd "${ROOT_DIR}" || exit 1
 
-trap kill_all SIGINT
+set -e -u -o pipefail
+(cd bridge && npm run build)
+(cd client && npm run watch) &
+CLI="$!"
+(cd server && npm run watch) &
+SRV="$!"
+
+trap kill_all EXIT
 
 function kill_all() {
   echo
   echo killing...
   kill 0 > /dev/null 2>&1
 }
-
-(cd client && npm run watch &)
-(cd server && npm run watch &)
-wait
+wait "${CLI}"
+wait "${SRV}"

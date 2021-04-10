@@ -14,12 +14,10 @@ export namespace Index {
   }
 }
 
-export namespace Post {
-  export interface Request {
-    month: string,
-    body: string,
-  }
+export namespace List {
   export interface Response {
-    months: [string],
+    year: number,
+    month: number,
+    texts: Array<Entity.Diary>
   }
 }

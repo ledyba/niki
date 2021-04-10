@@ -1,5 +1,5 @@
 import express from 'express';
-import mysql, {RowDataPacket} from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 import dayjs from 'dayjs';
 import * as bridge from 'bridge';
 import Repo from "./repo/Repo";
@@ -54,19 +54,29 @@ export default class Server {
     resp.send(r);
   }
   private async list(req: express.Request, resp: express.Response) {
-    const conn = await this.db.getConnection()
-    // language=MySQL
-    const result = await conn.query("select `date`, `text` from texts");
-    const rows = result[0] as RowDataPacket[]
-    const obj: Array<any> = [];
-    rows.forEach((it) => {
-      const date = dayjs(it["date"] as Date);
-      obj.push({
-        text: it["text"] as string,
-        date: date.format("YYYY/MM/DD"),
-      });
-    })
-    resp.send(obj);
+    const conn = await this.db.getConnection();
+    const repo = new Repo(conn);
+
+    const [year, month] = (()=>{
+      const y = parseInt(req.query['year'] as string | undefined ?? '');
+      const m = parseInt(req.query['month'] as string | undefined ?? '');
+      return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
+    })();
+    const result = await repo.readDiaries(year, month);
+    const diaries = result.map((it) => {
+      const diary: bridge.Entity.Diary = {
+        year: it.year,
+        month: it.month,
+        day: it.day,
+        text: it.text
+      };
+      return diary;
+    });
+    resp.send({
+        year: year,
+        month: month,
+        texts: diaries
+      } as bridge.List.Response);
   }
 
   /* from out */
