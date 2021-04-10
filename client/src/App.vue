@@ -1,10 +1,28 @@
 <template>
+  {{ msg }}
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
   </div>
   <router-view/>
 </template>
+
+<script lang="ts">
+import {defineComponent} from "vue";
+
+const App = defineComponent({
+  components: {
+  },
+  data: function () {
+    return {
+      msg: "Helloa",
+    };
+  },
+  props: {'msg1': String}
+});
+export default App;
+defineComponent()
+</script>
 
 <style lang="scss">
 #app {
