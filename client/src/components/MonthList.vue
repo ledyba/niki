@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import { defineComponent } from "vue";
 
 const MonthList = defineComponent({
   data() {
@@ -42,6 +42,7 @@ ul {
   margin: 0;
 }
 li {
+  text-align: center;
   display: block;
   margin: 0.5em 1em 0.5em 0;
   padding: 0.1em 0.3em;

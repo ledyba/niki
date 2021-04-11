@@ -1,14 +1,15 @@
 <template>
   <div class="home">
     <MonthList class="month-list" v-bind:months="resp.months" />
-    <div class="texts">texts</div>
+    <DiaryList class="texts" v-bind:texts="resp.texts" >texts</DiaryList>
   </div>
 </template>
 
 <script lang="ts">
 import MonthList from "@/components/MonthList.vue";
+import DiaryList from '@/components/DiaryList.vue'
 import * as bridge from 'bridge'
-import {defineComponent} from "vue";
+import { defineComponent } from "vue";
 
 async function callHome(): Promise<bridge.Index.Response> {
   const raw = await fetch('/api/index')
@@ -19,6 +20,7 @@ async function callHome(): Promise<bridge.Index.Response> {
 const Home = defineComponent({
   components: {
     MonthList,
+    DiaryList,
   },
   data() {
     return {

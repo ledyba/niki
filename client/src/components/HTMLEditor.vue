@@ -5,14 +5,12 @@
         Bold
       </button>
     </editor-menu-bar>
-    <editor-content :editor="editor" />
+    <editor-content v-bind:editor="editor" />
   </div>
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
-
-import { Editor, EditorContent, EditorMenuBubble, EditorMenuBar } from 'tiptap';
+import { Editor, EditorContent, EditorMenuBar } from 'tiptap';
 import {
   Blockquote,
   CodeBlock,
@@ -32,35 +30,42 @@ import {
   History,
 } from 'tiptap-extensions';
 
-export default class HTMLEditor extends Vue {
-  editor: Editor | null = null;
-  mounted() {
-    this.editor = new Editor({
-      content: "<p>This is just a boring paragraph</p>",
-      extensions: [
-        new Blockquote(),
-        new CodeBlock(),
-        new HardBreak(),
-        new Heading({ levels: [1, 2, 3] }),
-        new BulletList(),
-        new OrderedList(),
-        new ListItem(),
-        new TodoItem(),
-        new TodoList(),
-        new Bold(),
-        new Code(),
-        new Italic(),
-        new Link(),
-        new Strike(),
-        new Underline(),
-        new History(),
-      ],
-    });
+import { defineComponent } from "vue";
+
+const HTMLEditor = defineComponent({
+  components: {
+    EditorContent,
+    EditorMenuBar,
+  },
+  props: {
+    content: String,
+  },
+  data() {
+    return {
+      editor: new Editor({
+        content: ``,
+        extensions: [
+          new Blockquote(),
+          new CodeBlock(),
+          new HardBreak(),
+          new Heading({ levels: [1, 2, 3] }),
+          new BulletList(),
+          new OrderedList(),
+          new ListItem(),
+          new TodoItem(),
+          new TodoList(),
+          new Bold(),
+          new Code(),
+          new Italic(),
+          new Link(),
+          new Strike(),
+          new Underline(),
+          new History(),
+        ],
+      }),
+    };
   }
-  beforeDestroy() {
-    if (this.editor !== null) {
-      this.editor.destroy();
-    }
-  }
-}
+});
+
+export default HTMLEditor;
 </script>
