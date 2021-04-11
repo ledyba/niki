@@ -43,40 +43,49 @@ export default class Server {
   /* API endpoints */
   private async index(req: express.Request, resp: express.Response) {
     const conn = await this.db.getConnection()
-    const repo = new Repo(conn);
-    const now = dayjs();
-    const months = (await repo.allMonth()).map((it) => it.toString());
-    const texts =await repo.readDiaries(now.year(), now.month() + 1);
-    const r: bridge.Index.Response = {
-      months: months,
-      texts: texts,
-    };
-    resp.send(r);
+    try {
+      const repo = new Repo(conn);
+      const now = dayjs();
+      const months = (await repo.allMonth()).map((it) => it.toString());
+      const texts =await repo.readDiaries(now.year(), now.month() + 1);
+      const r: bridge.Index.Response = {
+        months: months,
+        texts: texts,
+      };
+      resp.send(r);
+    } finally {
+      conn.release()
+    }
   }
   private async list(req: express.Request, resp: express.Response) {
     const conn = await this.db.getConnection();
-    const repo = new Repo(conn);
+    try {
+      const repo = new Repo(conn);
 
-    const [year, month] = (()=>{
-      const y = parseInt(req.query['year'] as string | undefined ?? '');
-      const m = parseInt(req.query['month'] as string | undefined ?? '');
-      return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
-    })();
-    const result = await repo.readDiaries(year, month);
-    const diaries = result.map((it) => {
-      const diary: bridge.Entity.Diary = {
-        year: it.year,
-        month: it.month,
-        day: it.day,
-        text: it.text
-      };
-      return diary;
-    });
-    resp.send({
+      const [year, month] = (()=>{
+        const y = parseInt(req.query['year'] as string | undefined ?? '');
+        const m = parseInt(req.query['month'] as string | undefined ?? '');
+        return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
+      })();
+      const result = await repo.readDiaries(year, month);
+
+      const diaries = result.map((it) => {
+        const diary: bridge.Entity.Diary = {
+          year: it.year,
+          month: it.month,
+          day: it.day,
+          text: it.text
+        };
+        return diary;
+      });
+      resp.send({
         year: year,
         month: month,
         texts: diaries
       } as bridge.List.Response);
+    } finally {
+      conn.release()
+    }
   }
 
   /* from out */
