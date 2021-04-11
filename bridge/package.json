@@ -8,11 +8,13 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "up": "npm-check-updates --upgrade && npm install && npm audit fix"
   },
   "author": "Kaede Fujisaki",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "typescript": "^4.2.3"
+    "npm-check-updates": "^11.4.1",
+    "typescript": "^4.2.4"
   }
 }
