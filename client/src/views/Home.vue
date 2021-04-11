@@ -1,6 +1,7 @@
 <template>
   <div class="home">
-    <MonthList v-bind:months="resp.months" />
+    <MonthList class="month-list" v-bind:months="resp.months" />
+    <div class="texts">texts</div>
   </div>
 </template>
 
@@ -32,4 +33,24 @@ const Home = defineComponent({
   },
 })
 export default Home;
+
 </script>
+<style scoped lang="scss">
+.home {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.home > .month-list {
+  flex-basis: auto;
+  flex-grow: 0;
+  border-right: #2c3e50 1px solid;
+}
+.home > .texts {
+  flex-grow: 1;
+}
+</style>

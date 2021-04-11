@@ -1,8 +1,12 @@
 <template>
   <div class="month">
-    <li v-for="month in months" :key="month">
-      {{ month }}
-    </li>
+    <ul>
+      <router-link v-for="month in months" :key="month" v-bind:to="'/' + month">
+      <li>
+        {{ month }}
+      </li>
+      </router-link>
+    </ul>
   </div>
 </template>
 
@@ -26,15 +30,27 @@ export default MonthList;
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+.month {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5em;
+}
 ul {
+  width: 100%;
   list-style-type: none;
   padding: 0;
+  margin: 0;
 }
 li {
-  display: inline-block;
-  margin: 0 10px;
+  display: block;
+  margin: 0.5em 1em 0.5em 0;
+  padding: 0.1em 0.3em;
+  background: #168867;
+  width: 100%;
+  box-sizing: border-box;
 }
 a {
-  color: #42b983;
+  color: #ffffff;
+  text-decoration: none;
 }
 </style>
