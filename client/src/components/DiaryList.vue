@@ -1,7 +1,7 @@
 <template>
   <div class="diary-list">
     <div class="diary" v-for="text in texts" :key="text.year + '/' + text.month + '/' + text.day">
-      <Diary v-bind:text="text"></Diary>
+      <Diary v-bind:diary="text"></Diary>
     </div>
   </div>
 </template>
