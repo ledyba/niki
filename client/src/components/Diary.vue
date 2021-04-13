@@ -1,12 +1,13 @@
 <template>
   <div class="diary">
-    <div>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</div>
-    <quill-editor
+    <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
+    <Editor
         ref="myQuillEditor"
-        v-model="content"
-        @blur="onEditorBlur($event)"
-        @focus="onEditorFocus($event)"
-        @ready="onEditorReady($event)"
+        v-bind:content="content"
+        v-on:change="onEditorChange($event)"
+        v-on:blur="onEditorBlur($event)"
+        v-on:focus="onEditorFocus($event)"
+        v-on:ready="onEditorReady($event)"
     />
   </div>
 </template>
@@ -20,7 +21,7 @@ import {Quill} from 'quill';
 
 const Diary = defineComponent({
   components: {
-    'quill-editor': Editor,
+    Editor,
   },
   props: {
     diary: {
@@ -44,7 +45,7 @@ const Diary = defineComponent({
       console.log('editor ready!', quill)
     },
     onEditorChange(change: EditorChangeEvent) {
-      console.log('editor change!', change.quill, change.html, change.text);
+      console.log('editor change!', change);
       this.content = change.html;
     }
   },
@@ -54,7 +55,9 @@ const Diary = defineComponent({
         return this.diary.text;
       },
       set: function(value: string) {
-        this.$emit('change', value)
+        this.$emit('change', {
+          content: value
+        });
       }
     }
   },

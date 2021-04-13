@@ -8,7 +8,7 @@
 <script lang="ts">
 // https://github.com/surmon-china/vue-quill-editor
 import { defineComponent } from "vue";
-import {Quill, QuillOptionsStatic} from 'quill';
+import Quill, {QuillOptionsStatic} from 'quill';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
@@ -56,7 +56,6 @@ const Editor = defineComponent({
   },
   props: {
     content: String,
-    value: String,
     disabled: {
       type: Boolean,
       default: false
@@ -80,21 +79,18 @@ const Editor = defineComponent({
   },
   methods: {
     // Init Quill instance
-    initialize() {
+    initialize: function () {
       if (this.$el) {
+        // Set editor content
+        if (this.content !== undefined) {
+          //this.quill.clipboard.dangerouslyPasteHTML(this.content);
+          (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
+        }
         // Options
         this.options_ = Object.assign({}, this.defaultOptions, this.globalOptions, this.options)
         // Instance
         this.quill = new Quill(this.$refs.editor as HTMLElement, this.options_);
-        this.quill.enable(false);
-        // Set editor content
-        if (this.value || this.content) {
-          this.quill.pasteHTML((this.value || this.content) ?? '');
-        }
-        // Disabled editor
-        if (!this.disabled) {
-          this.quill.enable(true);
-        }
+        this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
         this.quill.on('selection-change', range => {
           if (!range) {
@@ -128,30 +124,19 @@ const Editor = defineComponent({
   },
   watch: {
     // Watch content change
-    content(newVal, oldVal) {
+    content: function (newVal, oldVal) {
       if (this.quill) {
-        if (newVal && newVal !== this.content_) {
+        if (newVal && newVal !== oldVal && newVal !== this.content_) {
           this.content_ = newVal
-          this.quill.pasteHTML(newVal)
-        } else if (!newVal) {
-          this.quill.setText('')
-        }
-      }
-    },
-    // Watch content change
-    value(newVal, oldVal) {
-      if (this.quill !== null) {
-        if (newVal && newVal !== this.content_) {
-          this.content_ = newVal
-          this.quill.pasteHTML(newVal)
+          this.quill.clipboard.dangerouslyPasteHTML(newVal);
         } else if (!newVal) {
           this.quill.setText('')
         }
       }
     },
     // Watch disabled change
-    disabled(newVal, oldVal) {
-      if (this.quill !== null) {
+    disabled: function (newVal, oldVal) {
+      if (this.quill !== null && newVal !== oldVal) {
         this.quill.enable(!newVal);
       }
     },
