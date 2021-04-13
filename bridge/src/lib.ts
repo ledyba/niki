@@ -10,7 +10,7 @@ export namespace Entity {
 export namespace Index {
   export interface Response {
     months: Array<string>,
-    texts: Array<Entity.Diary>
+    diaries: Array<Entity.Diary>
   }
 }
 
@@ -18,6 +18,6 @@ export namespace List {
   export interface Response {
     year: number,
     month: number,
-    texts: Array<Entity.Diary>
+    diaries: Array<Entity.Diary>
   }
 }

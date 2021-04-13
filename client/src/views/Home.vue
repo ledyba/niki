@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <MonthList class="month-list" v-bind:months="resp.months" />
-    <DiaryList class="texts" v-bind:texts="resp.texts" >texts</DiaryList>
+    <DiaryList class="texts" v-bind:diaries="resp.diaries" >texts</DiaryList>
   </div>
 </template>
 

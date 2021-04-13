@@ -1,7 +1,7 @@
 <template>
   <div class="diary-list">
-    <div class="diary" v-for="text in texts" :key="text.year + '/' + text.month + '/' + text.day">
-      <Diary v-bind:diary="text"></Diary>
+    <div class="diary" v-for="diary in diaries" :key="diary.year + '/' + diary.month + '/' + diary.day">
+      <Diary v-bind:diary="diary"></Diary>
     </div>
   </div>
 </template>
@@ -9,6 +9,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import Diary from '@/components/Diary.vue'
+import * as bridge from "bridge";
 
 const DiaryList = defineComponent({
   components: {
@@ -19,7 +20,11 @@ const DiaryList = defineComponent({
     };
   },
   props: {
-    texts: Array,
+    diaries: {
+      type: Array,
+      required: false,
+      default: () => ([] as Array<bridge.Entity.Diary>)
+    },
   },
   methods: {
   }

@@ -50,7 +50,7 @@ export default class Server {
       const texts =await repo.readDiaries(now.year(), now.month() + 1);
       const r: bridge.Index.Response = {
         months: months,
-        texts: texts,
+        diaries: texts,
       };
       resp.send(r);
     } finally {
@@ -81,7 +81,7 @@ export default class Server {
       resp.send({
         year: year,
         month: month,
-        texts: diaries
+        diaries: diaries
       } as bridge.List.Response);
     } finally {
       conn.release()
