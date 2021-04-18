@@ -56,6 +56,7 @@ const Index = defineComponent({
       month: month,
       months: Array<string>(),
       diaries: Array<bridge.Entity.Diary>(),
+      updateTicket: null as number | null,
     };
   },
   beforeMount: function() {
@@ -97,10 +98,15 @@ const Index = defineComponent({
           .catch((err) => console.error("Failed to load diaries", err));
     },
     onDiaryChange: function (event: DiaryChangeEvent) {
-      updateDiary(event.year, event.month, event.day, event.text)
-      .then((resp) => {
-        this.months = resp.months;
-      });
+      if(this.updateTicket === null) {
+        this.updateTicket = setTimeout(()=> {
+          this.updateTicket = null;
+          updateDiary(event.year, event.month, event.day, event.text)
+              .then((resp) => {
+                this.months = resp.months;
+              });
+        }, 1000);
+      }
     }
   }
 })
