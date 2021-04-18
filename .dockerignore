@@ -1,0 +1,14 @@
+./.idea/
+./.git/
+./db/
+./helpers/
+./var/
+./*.yml
+./Makefile
+./.gitignore
+./server/.vscode/
+./client/dist/
+./client/node_modules/
+./server/node_modules/
+./bridge/node_modules/
+./Dockerfile

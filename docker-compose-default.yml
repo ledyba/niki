@@ -1,0 +1,51 @@
+---
+version: '3.7'
+services:
+  flyway:
+    image: 'flyway/flyway:7.3.1'
+    container_name: 'niki_flyway'
+    restart: 'no'
+    volumes:
+      - ./db/flyway_data/sql:/flyway/sql
+      - ./db/flyway_data/conf:/flyway/conf
+    networks:
+      - 'default'
+
+  web:
+    image: 'niki_web'
+    build:
+      context: '.'
+    container_name: 'niki_web'
+    hostname: 'niki_web'
+    environment:
+      DATABASE_HOST: 'db'
+    restart: always
+    ports:
+      - '8888:8888'
+    networks:
+      - 'default'
+
+  db:
+    image: 'postgres:alpine'
+    container_name: 'niki_db'
+    hostname: 'niki_db'
+    restart: always
+    environment:
+      POSTGRES_DB: 'niki'
+      POSTGRES_USER: 'niki'
+      POSTGRES_PASSWORD: 'niki'
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+      TZ: 'Asia/Tokyo'
+      PGTZ: 'Asia/Tokyo'
+    expose:
+      - '5432'
+    volumes:
+      - './var/psql:/var/lib/postgresql/data:z'
+      - './db/helpers:/helpers'
+    networks:
+      - 'default'
+    tty: true
+    stdin_open: true
+networks:
+  default:
+    external: false

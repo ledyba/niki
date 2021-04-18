@@ -4,6 +4,8 @@ import * as bridge from 'bridge';
 import Repo from "./repo/Repo";
 import Pool from "./repo/Pool";
 
+const DATABASE_HOST = process.env['DATABASE_HOST'] || 'localhost';
+
 /**
 # express docs
 http://expressjs.com/ja/4x/api.html
@@ -13,16 +15,14 @@ http://expressjs.com/ja/4x/api.html
  * Server
  */
 export default class Server {
-  private readonly hostname: string
   private readonly port: number;
   private readonly app: express.Express;
   private readonly db: Pool;
 
-  constructor(hostname: string, port: number) {
-    this.hostname = hostname;
+  constructor(port: number) {
     this.port = port;
     this.app = express();
-    this.db = new Pool('localhost');
+    this.db = new Pool(DATABASE_HOST);
     this.setup();
   }
 
@@ -86,7 +86,7 @@ export default class Server {
   start(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       try {
-        this.app.listen(this.port, this.hostname, () => { resolve(); });
+        this.app.listen(this.port, () => { resolve(); });
       } catch (err) {
         reject(err)
       }
