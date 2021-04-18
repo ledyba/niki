@@ -98,15 +98,18 @@ const Index = defineComponent({
           .catch((err) => console.error("Failed to load diaries", err));
     },
     onDiaryChange: function (event: DiaryChangeEvent) {
-      if(this.updateTicket === null) {
-        this.updateTicket = setTimeout(()=> {
-          this.updateTicket = null;
-          updateDiary(event.year, event.month, event.day, event.text)
-              .then((resp) => {
-                this.months = resp.months;
-              });
-        }, 1000);
+      if(this.updateTicket !== null) {
+        clearTimeout(this.updateTicket);
+        this.updateTicket = null;
       }
+      this.updateTicket = setTimeout(()=> {
+        this.updateTicket = null;
+        updateDiary(event.year, event.month, event.day, event.text)
+            .then((resp) => {
+              this.months = resp.months;
+              this.updateTicket = null;
+            });
+      }, 100);
     }
   }
 })
