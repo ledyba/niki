@@ -90,6 +90,7 @@ const Editor = defineComponent({
         this.options_ = Object.assign({}, this.defaultOptions, this.globalOptions, this.options)
         // Instance
         this.quill = new Quill(this.$refs.editor as HTMLElement, this.options_);
+        this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
         this.quill.on('selection-change', range => {

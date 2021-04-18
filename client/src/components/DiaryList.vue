@@ -1,15 +1,15 @@
 <template>
   <div class="diary-list">
     <div class="diary" v-for="diary in diaries" :key="diary.year + '/' + diary.month + '/' + diary.day">
-      <Diary v-bind:diary="diary"></Diary>
+      <Diary v-bind:diary="diary" v-on:change="onDiaryChange($event)"></Diary>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import Diary from '@/components/Diary.vue'
-import * as bridge from "bridge";
+import { defineComponent } from 'vue';
+import Diary, {DiaryChangeEvent} from '@/components/Diary.vue'
+import * as bridge from 'bridge';
 
 const DiaryList = defineComponent({
   components: {
@@ -27,10 +27,14 @@ const DiaryList = defineComponent({
     },
   },
   methods: {
+    onDiaryChange: function (event: DiaryChangeEvent) {
+      this.$emit('diary-change', event)
+    },
   }
 });
 
 export default DiaryList;
+export { DiaryChangeEvent };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

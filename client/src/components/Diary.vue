@@ -3,11 +3,8 @@
     <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
     <Editor
         ref="myQuillEditor"
-        v-bind:content="content"
+        v-bind:content="diary.text"
         v-on:change="onEditorChange($event)"
-        v-on:blur="onEditorBlur($event)"
-        v-on:focus="onEditorFocus($event)"
-        v-on:ready="onEditorReady($event)"
     />
   </div>
 </template>
@@ -35,35 +32,24 @@ const Diary = defineComponent({
     }
   },
   methods: {
-    onEditorBlur(quill: Quill) {
-      console.log('editor blur!', quill)
-    },
-    onEditorFocus(quill: Quill) {
-      console.log('editor focus!', quill)
-    },
-    onEditorReady(quill: Quill) {
-      console.log('editor ready!', quill)
-    },
     onEditorChange(change: EditorChangeEvent) {
-      console.log('editor change!', change);
-      this.content = change.html;
+      this.$emit('change', {
+        year: this.diary.year,
+        month: this.diary.month,
+        day: this.diary.day,
+        text: change.html,
+      } as DiaryChangeEvent);
     }
-  },
-  computed: {
-    content: {
-      get: function(): string {
-        return this.diary.text;
-      },
-      set: function(value: string) {
-        this.$emit('change', {
-          content: value
-        });
-      }
-    }
-  },
+  }
 });
 
 export default Diary;
+export interface DiaryChangeEvent {
+  year: number,
+  month: number,
+  day: number,
+  text: string,
+}
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

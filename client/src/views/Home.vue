@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-    <MonthList class="month-list" v-bind:months="resp.months" />
-    <DiaryList class="texts" v-bind:diaries="resp.diaries" >texts</DiaryList>
+    <MonthList class="month-list" v-bind:months="resp.months"/>
+    <DiaryList class="texts" v-bind:diaries="resp.diaries" v-on:diary-change="onDiaryChange($event)">texts</DiaryList>
   </div>
 </template>
 
@@ -10,6 +10,7 @@ import MonthList from "@/components/MonthList.vue";
 import DiaryList from '@/components/DiaryList.vue'
 import * as bridge from 'bridge'
 import { defineComponent } from "vue";
+import {DiaryChangeEvent} from "@/components/Diary.vue";
 
 async function callHome(): Promise<bridge.Index.Response> {
   const raw = await fetch('/api/index')
@@ -33,6 +34,11 @@ const Home = defineComponent({
           this.resp = resp;
         });
   },
+  methods: {
+    onDiaryChange: function (event: DiaryChangeEvent) {
+      console.log(event);
+    }
+  }
 })
 export default Home;
 
