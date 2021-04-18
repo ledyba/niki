@@ -7,6 +7,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Home',
     component: Home
   },
+  {
+    path: '/:year/:month',
+    name: 'Month',
+    component: Home
+  },
 //  {
 //    path: '/about',
 //    name: 'About',
