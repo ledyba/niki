@@ -70,8 +70,13 @@ const Index = defineComponent({
     updateDiaries: function () {
       fetchDiaries(this.year, this.month)
           .then((resp) => {
-            this.months = resp.months;
             const now = dayjs();
+            const months = resp.months;
+            const currentMonth = `${('0000'+now.year()).slice(-4)}/${('00'+(now.month() + 1)).slice(-2)}`;
+            if(months.length <= 0 || months[0] !== currentMonth) {
+              months.unshift(currentMonth);
+            }
+            this.months = months;
             const diaries = resp.diaries;
             let alreadyPosted = false;
             if(diaries.length > 0) {
