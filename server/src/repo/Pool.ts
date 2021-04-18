@@ -1,0 +1,54 @@
+import * as genericPool from 'generic-pool';
+import {Client, Connect, PreparedStatement, ResultIterator} from "ts-postgres";
+import {Value} from "ts-postgres/src/types";
+
+export default class Pool {
+  private pool: genericPool.Pool<Client>
+  constructor(hostname: string) {
+    const opt = {
+      host: hostname,
+      port: 5432,
+      user: 'niki',
+      password: 'niki',
+      database: 'niki',
+    };
+    this.pool = genericPool.createPool({
+      create: async (): Promise<Client> => {
+        const client = new Client(opt);
+        try {
+          const timeout = new Promise((resolve, reject) => setTimeout(() => reject(new Error("Connection Timed out")), 500));
+          await Promise.race([client.connect(), timeout]);
+          client.on('error', console.log);
+          return client;
+        } catch (err) {
+          console.error('Failed to connect: ', err);
+          throw err;
+        }
+      },
+      destroy: async (client: Client) => {
+        return client.end().then(() => { })
+      },
+      validate: (client: Client) => {
+        return Promise.resolve(!client.closed);
+      }
+    }, { testOnBorrow: true });
+  }
+  async use<T>(fn: (cl: Client) => T | PromiseLike<T>): Promise<T> {
+    return await this.pool.use(fn);
+  }
+  async query(query: string, args?: Value[]): Promise<ResultIterator> {
+    return await this.pool.use(async (cl) => {
+      return cl.query(query, args);
+    });
+  }
+  async prepare(query: string, values: Value[]): Promise<ResultIterator> {
+    return await this.pool.use(async (cl) => {
+      const stmt = await cl.prepare(query)
+      try {
+        return stmt.execute(values);
+      } finally {
+        await stmt.close();
+      }
+    });
+  }
+}

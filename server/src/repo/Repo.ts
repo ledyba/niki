@@ -1,30 +1,37 @@
-import {Connection, RowDataPacket} from "mysql2/promise";
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 import CustomParseFormat from 'dayjs/plugin/customParseFormat';
 import { Month, Diary } from './Entity'
+import Pool from "./Pool";
 
 dayjs.extend(CustomParseFormat);
 
 export default class Repo {
-  private conn: Connection;
-  constructor(conn: Connection) {
-    this.conn = conn;
+  private pool: Pool;
+  constructor(pool: Pool) {
+    this.pool = pool;
   }
   async allMonth(): Promise<Array<Month>> {
-    // language=MySQL
-    const query = "select distinct year(`date`) as `year`, month(`date`) as `month` from texts order by `year`, `month` desc;";
-    const result = await this.conn.query(query);
-    const rows = result[0] as RowDataPacket[]
+    // language=PostgreSQL
+    const query = `
+select distinct date_part('year', date) as year,
+                date_part('month', date) as month
+                from diaries order by year, month desc;
+`;
+    const rows = await this.pool.query(query);
     const months: Array<Month> = [];
-    rows.forEach((it) => {
-      months.push(new Month(it['year'], it['month']));
-    });
+    for await (const row of rows) {
+      months.push(new Month(row.get('year') as number, row.get('month') as number));
+    }
     return months;
   }
 
   async readDiaries(year: number, month: number): Promise<Array<Diary>> {
-    // language=MySQL
-    const query = "select `date`, `text` from texts where (`date` between ? and ?) order by `date` desc;";
+    // language=PostgreSQL
+    const query = `
+select date, text from diaries
+  where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'))
+  order by date desc;
+`;
     const target = dayjs(new Date(year, month - 1, 1));
     const begin = target
       .format('YYYY/MM/DD');
@@ -32,12 +39,13 @@ export default class Repo {
       .add(1, 'month')
       .subtract(1, `day`)
       .format('YYYY/MM/DD');
-    const result = await this.conn.query(query, [begin, end]);
-    const rows = result[0] as RowDataPacket[]
-    return rows.map((it) => {
-      const date = dayjs(it['date']);
-      const text = it['text'] as string;
-      return new Diary(date.year(), date.month() + 1, date.date(), text);
-    });
+    const result =  await this.pool.prepare(query, [begin, end]);
+    const diaries: Array<Diary> = [];
+    for await (const row of result) {
+      const date = dayjs(row.get('date') as Date);
+      const text = row.get('text') as string;
+      diaries.push(new Diary(date.year(), date.month() + 1, date.date(), text));
+    }
+    return diaries;
   }
 }
