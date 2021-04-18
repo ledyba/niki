@@ -8,7 +8,7 @@ import {defineComponent} from "vue";
 const App = defineComponent({
   components: {
   },
-  data() {
+  data: function () {
     return {};
   },
   props: {}

@@ -41,7 +41,7 @@ migrate:
 
 .PHONY: down
 down:
-	docker-compose down
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose down
 
 .PHONY: clean
 clean:

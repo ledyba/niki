@@ -18,17 +18,17 @@ async function callHome(): Promise<bridge.Index.Response> {
   return json as bridge.Index.Response;
 }
 
-const Home = defineComponent({
+const Index = defineComponent({
   components: {
     MonthList,
     DiaryList,
   },
-  data() {
+  data: function() {
     return {
       resp: {} as bridge.Index.Response,
     };
   },
-  created() {
+  created: function() {
     callHome()
         .then((resp) => {
           this.resp = resp;
@@ -40,7 +40,7 @@ const Home = defineComponent({
     }
   }
 })
-export default Home;
+export default Index;
 
 </script>
 <style scoped lang="scss">
