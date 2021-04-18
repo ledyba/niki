@@ -6,8 +6,8 @@ services:
     container_name: 'niki_flyway'
     restart: 'no'
     volumes:
-      - ./db/flyway_data/sql:/flyway/sql
-      - ./db/flyway_data/conf:/flyway/conf
+      - './db/flyway_data/sql:/flyway/sql'
+      - './db/flyway_data/conf:/flyway/conf'
     networks:
       - 'default'
 
