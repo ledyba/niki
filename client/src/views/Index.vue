@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-    <MonthList class="month-list" v-bind:months="resp.months"/>
-    <DiaryList class="texts" v-bind:diaries="resp.diaries" v-on:diary-change="onDiaryChange($event)">texts</DiaryList>
+    <MonthList class="month-list" v-bind:months="months"/>
+    <DiaryList class="texts" v-bind:diaries="diaries" v-on:diary-change="onDiaryChange($event)">texts</DiaryList>
   </div>
 </template>
 
@@ -11,11 +11,36 @@ import DiaryList from '@/components/DiaryList.vue'
 import * as bridge from 'bridge'
 import { defineComponent } from "vue";
 import {DiaryChangeEvent} from "@/components/Diary.vue";
+import dayjs from "dayjs";
 
-async function callHome(): Promise<bridge.Index.Response> {
-  const raw = await fetch('/api/index')
-  const json = await raw.json()
-  return json as bridge.Index.Response;
+function parseIntArg(str: string): number | null {
+  const parsed = parseInt(str, 10);
+  if(isNaN(parsed)) {
+    return null;
+  }
+  return parsed;
+}
+
+async function fetchDiaries(year: number, month: number): Promise<bridge.Diaries.Response> {
+  const raw = await fetch(`/diaries/${year}/${month}`);
+  const json = await raw.json();
+  return json as bridge.Diaries.Response;
+}
+
+async function updateDiary(year: number, month: number, day: number, text: string): Promise<bridge.UpdateDiary.Response> {
+  const param  = {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8'
+    },
+    // リクエストボディ
+    body: JSON.stringify({
+      text: text,
+    } as bridge.UpdateDiary.RequestBody)
+  };
+  const raw = await fetch(`/diaries/${year}/${month}/${day}`, param);
+  const json = await raw.json();
+  return json as bridge.Diaries.Response;
 }
 
 const Index = defineComponent({
@@ -24,19 +49,28 @@ const Index = defineComponent({
     DiaryList,
   },
   data: function() {
+    const year: number = parseIntArg(this.$route.params.year as string) || dayjs().year();
+    const month: number = parseIntArg(this.$route.params.month as string) || dayjs().month() + 1;
     return {
-      resp: {} as bridge.Index.Response,
+      year: year,
+      month: month,
+      months: Array<string>(),
+      diaries: Array<bridge.Entity.Diary>(),
     };
   },
   created: function() {
-    callHome()
+    fetchDiaries(this.year, this.month)
         .then((resp) => {
-          this.resp = resp;
+          this.months = resp.months;
+          this.diaries = resp.diaries;
         });
   },
   methods: {
     onDiaryChange: function (event: DiaryChangeEvent) {
-      console.log(event);
+      updateDiary(event.year, event.month, event.day, event.text)
+      .then((resp) => {
+        this.months = resp.months;
+      });
     }
   }
 })

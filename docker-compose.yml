@@ -21,6 +21,8 @@ services:
       POSTGRES_USER: 'niki'
       POSTGRES_PASSWORD: 'niki'
       POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+      TZ: 'Asia/Tokyo'
+      PGTZ: 'Asia/Tokyo'
     volumes:
       - './var/psql:/var/lib/postgresql/data:z'
       - './db/helpers:/helpers'

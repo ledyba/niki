@@ -7,17 +7,18 @@ export namespace Entity {
   }
 }
 
-export namespace Index {
+export namespace Diaries {
   export interface Response {
     months: Array<string>,
     diaries: Array<Entity.Diary>
   }
 }
 
-export namespace List {
+export namespace UpdateDiary {
+  export interface RequestBody {
+    text: string,
+  }
   export interface Response {
-    year: number,
-    month: number,
-    diaries: Array<Entity.Diary>
+    months: Array<string>
   }
 }

@@ -1,3 +1,5 @@
+ALTER DATABASE niki SET timezone TO 'Asia/Tokyo';
+
 CREATE FUNCTION update_timestamp() RETURNS TRIGGER
   LANGUAGE plpgsql
 AS
@@ -11,8 +13,8 @@ $$;
 CREATE TABLE diaries (
   date date NOT NULL PRIMARY KEY,
   text text NOT NULL,
-  created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TRIGGER text_modify_updated

@@ -32,8 +32,8 @@ export default class Server {
     this.app.use(express.urlencoded({ extended: true }));
 
     // API endpoints
-    this.app.use('/api/index', this.index.bind(this));
-    this.app.use('/api/list', this.list.bind(this));
+    this.app.get('/diaries/:year/:month', this.diaries.bind(this));
+    this.app.post('/diaries/:year/:month/:day', this.updateDiary.bind(this));
 
     // Client files
     this.app.use(express.static("../client/dist", {
@@ -42,41 +42,41 @@ export default class Server {
   }
 
   /* API endpoints */
-  private async index(req: express.Request, resp: express.Response) {
+  private async diaries(req: express.Request, resp: express.Response) {
     const repo = new Repo(this.db);
-    const now = dayjs();
+
+    const [year, month] = (()=>{
+      const y = parseInt(req.params['year'] as string || '');
+      const m = parseInt(req.params['month'] as string || '');
+      return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
+    })();
+
     const months = (await repo.allMonth()).map((it) => it.toString());
-    const texts =await repo.readDiaries(now.year(), now.month() + 1);
-    const r: bridge.Index.Response = {
+    const texts =await repo.readDiaries(year, month);
+    const r: bridge.Diaries.Response = {
       months: months,
       diaries: texts,
     };
     resp.send(r);
   }
-  private async list(req: express.Request, resp: express.Response) {
+  private async updateDiary(req: express.Request, resp: express.Response) {
     const repo = new Repo(this.db);
+    const year = parseInt(req.params['year'] as string || '');
+    const month = parseInt(req.params['month'] as string || '');
+    const day = parseInt(req.params['day'] as string || '');
+    if(isNaN(year) || isNaN(month) || isNaN(day)) {
+      resp.status(400);
+      resp.send("Specify date correctly.");
+      return;
+    }
+    const body = req.body as bridge.UpdateDiary.RequestBody;
+    await repo.updateDiary(year, month, day, body.text);
 
-    const [year, month] = (()=>{
-      const y = parseInt(req.query['year'] as string | undefined ?? '');
-      const m = parseInt(req.query['month'] as string | undefined ?? '');
-      return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
-    })();
-    const result = await repo.readDiaries(year, month);
-
-    const diaries = result.map((it) => {
-      const diary: bridge.Entity.Diary = {
-        year: it.year,
-        month: it.month,
-        day: it.day,
-        text: it.text
-      };
-      return diary;
-    });
-    resp.send({
-      year: year,
-      month: month,
-      diaries: diaries
-    } as bridge.List.Response);
+    const months = (await repo.allMonth()).map((it) => it.toString());
+    const r: bridge.UpdateDiary.Response = {
+      months: months,
+    };
+    resp.send(r);
   }
 
   /* from out */

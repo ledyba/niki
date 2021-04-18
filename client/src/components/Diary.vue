@@ -11,10 +11,9 @@
 
 <script lang="ts">
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
-import { defineComponent } from "vue";
-import * as bridge from "bridge";
+import { defineComponent } from 'vue';
+import * as bridge from 'bridge';
 import Editor, {EditorChangeEvent} from '@/components/Editor.vue'
-import {Quill} from 'quill';
 
 const Diary = defineComponent({
   components: {
