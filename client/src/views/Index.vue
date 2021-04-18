@@ -109,7 +109,7 @@ const Index = defineComponent({
               this.months = resp.months;
               this.updateTicket = null;
             });
-      }, 100);
+      }, 200);
     }
   }
 })
