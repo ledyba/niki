@@ -41,14 +41,4 @@ export default class Pool {
       return cl.query(query, args);
     });
   }
-  async prepare(query: string, values: Value[]): Promise<ResultIterator> {
-    return await this.pool.use(async (cl) => {
-      const stmt = await cl.prepare(query)
-      try {
-        return stmt.execute(values);
-      } finally {
-        await stmt.close();
-      }
-    });
-  }
 }
