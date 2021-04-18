@@ -24,14 +24,15 @@ client:
 
 
 .PHONY: up
-up: var/mysql
+up: var/psql
 	UID=$(shell id -u) GID=$(shell id -g) docker-compose up -d db
 	$(MAKE) wait
 
 .PHONY: wait
 wait:
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose run \
+	@UID=$(shell id -u) GID=$(shell id -g) docker-compose run \
 		--rm \
+		--use-aliases \
 		db \
 		bash /helpers/wait-boot.sh
 
@@ -45,7 +46,7 @@ down:
 
 .PHONY: clean
 clean:
-	rm -Rfv db/var
+	rm -Rfv var
 
 .PNONY: recreate
 recreate:
@@ -55,5 +56,5 @@ recreate:
 	$(MAKE) wait
 	$(MAKE) migrate
 
-var/mysql:
-	mkdir -p var/mysql
+var/psql:
+	mkdir -p "$@"

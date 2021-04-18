@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
+REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && cd .. && pwd)"
+cd "${REPO_DIR}" || exit 1
+
 set -eu
 set -o pipefail
 
-REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && cd .. && pwd)"
-cd "${REPO_DIR}"
-
-UID=$(id -u "${UID}") GID=$(id -g "${UID}") docker-compose run \
+env UID="$(id -u)" GID="$(id -g)" docker-compose run \
   --rm \
+  --user "$(id -u)" \
+	--use-aliases \
+  -e 'PGPASSWORD=niki' \
   db \
-  mysql '--protocol=tcp' \
-        '--user=niki' '--password=niki' \
-        '--host=db' '--database=niki' \
-        '--default-character-set=utf8mb4' \
-        "$@"
+  psql  '--username=niki' \
+        '--host=db' \
+        "$@" \
+        niki

@@ -1,7 +1,11 @@
 #!/bin/bash
 
-echo -n "[Waiting mysqld]"
-while ! mysql '--protocol=tcp' '--user=root' '--password=root' '--host=db' -e 'SELECT NOW();' > /dev/null 2>&1; do
+set -eu
+set -o pipefail
+
+echo -n "[Waiting Postgres] "
+export PGPASSWORD=niki
+while ! psql '--username=niki' '--host=db' -c 'SELECT NOW();' > /dev/null  2>&1; do
   echo -n '.'
   sleep 1
 done

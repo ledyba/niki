@@ -12,25 +12,21 @@ services:
       - 'default'
 
   db:
-    image: 'niki_mysql'
+    image: 'postgres:alpine'
     container_name: 'niki_db'
-    build:
-      context: './docker/images/mysql'
+    hostname: 'niki_db'
+    user: "${UID}:${GID}"
     environment:
-      MYSQL_DATABASE: 'niki'
-      MYSQL_ROOT_PASSWORD: 'root'
-      MYSQL_USER: 'niki'
-      MYSQL_PASSWORD: 'niki'
-      MYSQL_USER_ID: '${UID}'
-      MYSQL_GROUP_ID: '${GID}'
-    command:
-      - '--character-set-server=utf8mb4'
-      - '--collation-server=utf8mb4_unicode_ci'
+      POSTGRES_DB: 'niki'
+      POSTGRES_USER: 'niki'
+      POSTGRES_PASSWORD: 'niki'
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
     volumes:
-      - './var/mysql:/var/lib/mysql'
+      - './var/psql:/var/lib/postgresql/data:z'
       - './db/helpers:/helpers'
+      - '/etc/passwd:/etc/passwd:ro'
     ports:
-      - '3306:3306'
+      - '5432:5432'
     networks:
       - 'default'
     tty: true
