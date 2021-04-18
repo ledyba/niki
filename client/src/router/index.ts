@@ -4,12 +4,12 @@ import Home from '../views/Index.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    name: 'Home',
+    name: 'Index',
     component: Home
   },
   {
     path: '/:year/:month',
-    name: 'Month',
+    name: 'MonthList',
     component: Home
   },
 //  {
