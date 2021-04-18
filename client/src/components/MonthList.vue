@@ -46,12 +46,12 @@ li {
   display: block;
   margin: 0.5em 1em 0.5em 0;
   padding: 0.1em 0.3em;
-  background: #168867;
   width: 100%;
   box-sizing: border-box;
+  border: #2c3e50 solid 1px;
 }
 a {
-  color: #ffffff;
+  color: black;
   text-decoration: none;
 }
 </style>

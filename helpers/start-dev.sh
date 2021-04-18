@@ -2,7 +2,8 @@
 ROOT_DIR="$(cd "$(readlink -f "$(dirname "$0")")" && cd .. && pwd)"
 cd "${ROOT_DIR}" || exit 1
 
-set -e -u -o pipefail
+set -eu
+set -o pipefail
 (cd bridge && npm run build)
 (cd client && npm run watch) &
 CLI="$!"

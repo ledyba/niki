@@ -115,6 +115,7 @@ export default Index;
 .home > .month-list {
   flex-basis: auto;
   flex-grow: 0;
+  flex-shrink: 0;
   border-right: #2c3e50 1px solid;
 }
 .home > .texts {

@@ -28,8 +28,8 @@ export default class Server {
 
   private setup() {
     this.app.set('etag', false);
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(express.json({ limit: '128mb' }));
+    this.app.use(express.urlencoded({ limit: '128mb', extended: true, parameterLimit: 1280000 }));
 
     // API endpoints
     this.app.get('^/diaries/:year([0-9]{4})/:month([0-9]{2})', this.diaries.bind(this));
