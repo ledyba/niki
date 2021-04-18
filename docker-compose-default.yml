@@ -22,6 +22,9 @@ services:
     restart: always
     ports:
       - '8888:8888'
+      # To protect your diary, please replace with this line and protect using reverse proxy.
+      # Please read README.md for more details.
+      #- '8888:8888'
     networks:
       - 'default'
 
