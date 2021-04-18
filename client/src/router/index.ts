@@ -1,11 +1,16 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import Home from '../views/Index.vue'
+import dayjs from "dayjs";
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    name: 'Index',
-    component: Home
+    redirect: () => {
+      const now = dayjs();
+      const year = now.year();
+      const month = now.month() + 1;
+      return `/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}`;
+    }
   },
   {
     path: '/:year/:month',

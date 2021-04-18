@@ -32,10 +32,13 @@ export default class Server {
     this.app.use(express.urlencoded({ extended: true }));
 
     // API endpoints
-    this.app.get('/diaries/:year/:month', this.diaries.bind(this));
-    this.app.post('/diaries/:year/:month/:day', this.updateDiary.bind(this));
+    this.app.get('^/diaries/:year([0-9]{4})/:month([0-9]{2})', this.diaries.bind(this));
+    this.app.post('/diaries/:year([0-9]{4})/:month([0-9]{2})/:day([0-9]{2})', this.updateDiary.bind(this));
 
     // Client files
+    this.app.use('^/:year([0-9]{4})/:month([0-9]{2})', express.static("../client/dist", {
+      etag: false
+    }));
     this.app.use(express.static("../client/dist", {
       etag: false
     }));

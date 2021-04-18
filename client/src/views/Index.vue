@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <MonthList class="month-list" v-bind:months="months"/>
-    <DiaryList class="texts" v-bind:diaries="diaries" v-on:diary-change="onDiaryChange($event)">texts</DiaryList>
+    <DiaryList class="texts" v-bind:diaries="diaries" v-on:diary-change="onDiaryChange($event)" />
   </div>
 </template>
 
@@ -22,7 +22,7 @@ function parseIntArg(str: string): number | null {
 }
 
 async function fetchDiaries(year: number, month: number): Promise<bridge.Diaries.Response> {
-  const raw = await fetch(`/diaries/${year}/${month}`);
+  const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}`);
   const json = await raw.json();
   return json as bridge.Diaries.Response;
 }
@@ -38,7 +38,7 @@ async function updateDiary(year: number, month: number, day: number, text: strin
       text: text,
     } as bridge.UpdateDiary.RequestBody)
   };
-  const raw = await fetch(`/diaries/${year}/${month}/${day}`, param);
+  const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}/${('00'+day).slice(-2)}`, param);
   const json = await raw.json();
   return json as bridge.Diaries.Response;
 }
@@ -58,14 +58,39 @@ const Index = defineComponent({
       diaries: Array<bridge.Entity.Diary>(),
     };
   },
-  created: function() {
-    fetchDiaries(this.year, this.month)
-        .then((resp) => {
-          this.months = resp.months;
-          this.diaries = resp.diaries;
-        });
+  beforeMount: function() {
+    this.updateDiaries();
+  },
+  beforeRouteUpdate: function(route) {
+    this.year = parseIntArg(route.params.year as string) || dayjs().year();
+    this.month = parseIntArg(route.params.month as string) || dayjs().month() + 1;
+    this.updateDiaries();
   },
   methods: {
+    updateDiaries: function () {
+      fetchDiaries(this.year, this.month)
+          .then((resp) => {
+            this.months = resp.months;
+            const now = dayjs();
+            const diaries = resp.diaries;
+            let alreadyPosted = false;
+            if(diaries.length > 0) {
+              const first = diaries[0];
+              alreadyPosted = first.year === now.year() && first.month === now.month() + 1 && first.day === now.date();
+            }
+            if(!alreadyPosted && this.year === now.year() && this.month === now.month()+1) {
+              const diary: bridge.Entity.Diary = {
+                year: now.year(),
+                month: now.month() + 1,
+                day: now.date(),
+                text: '',
+              };
+              diaries.unshift(diary);
+            }
+            this.diaries = diaries;
+          })
+          .catch((err) => console.error("Failed to load diaries", err));
+    },
     onDiaryChange: function (event: DiaryChangeEvent) {
       updateDiary(event.year, event.month, event.day, event.text)
       .then((resp) => {
