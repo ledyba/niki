@@ -46,13 +46,13 @@ const defaultOptions: QuillOptionsStatic = {
 
 const Editor = defineComponent({
   name: 'quill-editor',
-  data() {
+  data: function() {
     return {
       options_: {} as QuillOptionsStatic,
       content_: '',
       quill: null as (Quill | null),
       defaultOptions
-    }
+    };
   },
   props: {
     content: String,
@@ -71,10 +71,10 @@ const Editor = defineComponent({
       default: () => ({})
     }
   },
-  mounted() {
+  mounted: function() {
     this.initialize();
   },
-  beforeUnmount() {
+  beforeUnmount: function() {
     this.quill = null;
   },
   methods: {

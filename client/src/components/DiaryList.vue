@@ -15,7 +15,7 @@ const DiaryList = defineComponent({
   components: {
     Diary,
   },
-  data() {
+  data: function() {
     return {
     };
   },
@@ -23,7 +23,7 @@ const DiaryList = defineComponent({
     diaries: {
       type: Array,
       required: false,
-      default: () => ([] as Array<bridge.Entity.Diary>)
+      default: () => { return ([] as Array<bridge.Entity.Diary>); },
     },
   },
   methods: {

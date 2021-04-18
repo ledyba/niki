@@ -27,12 +27,12 @@ const Diary = defineComponent({
       default: () => ({} as bridge.Entity.Diary)
     },
   },
-  data() {
+  data: function () {
     return {
     }
   },
   methods: {
-    onEditorChange(change: EditorChangeEvent) {
+    onEditorChange: function (change: EditorChangeEvent) {
       this.$emit('change', {
         year: this.diary.year,
         month: this.diary.month,

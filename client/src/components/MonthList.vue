@@ -14,7 +14,7 @@
 import { defineComponent } from "vue";
 
 const MonthList = defineComponent({
-  data() {
+  data: function () {
     return {
     };
   },
