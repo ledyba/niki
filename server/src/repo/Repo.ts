@@ -39,7 +39,7 @@ select date, text from diaries
       .add(1, 'month')
       .subtract(1, `day`)
       .format('YYYY/MM/DD');
-    const result =  await this.pool.prepare(query, [begin, end]);
+    const result =  await this.pool.query(query, [begin, end]);
     const diaries: Array<Diary> = [];
     for await (const row of result) {
       const date = dayjs(row.get('date') as Date);
