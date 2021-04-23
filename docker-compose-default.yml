@@ -24,7 +24,7 @@ services:
       - '8888:8888'
       # To protect your diary, please replace with this line and protect using reverse proxy.
       # Please read README.md for more details.
-      #- '8888:8888'
+      #- '127.0.0.1:8888:8888'
     networks:
       - 'default'
 

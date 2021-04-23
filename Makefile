@@ -56,5 +56,9 @@ recreate:
 	$(MAKE) wait
 	$(MAKE) migrate
 
+.PHONY: cli
+cli:
+	bash ./db/cli
+
 var/psql:
 	mkdir -p "$@"
