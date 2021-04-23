@@ -49,7 +49,7 @@ select date, text from diaries
     return diaries;
   }
 
-  async updateDiary(year: number, month: number, day: number, text: string): Promise<Boolean> {
+  async updateDiary(year: number, month: number, day: number, text: string): Promise<boolean> {
     return await this.pool.use(async (cl) => {
       await cl.query("begin");
       try {

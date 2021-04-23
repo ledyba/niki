@@ -2,8 +2,9 @@
   <div class="diary">
     <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
     <Editor
-        ref="myQuillEditor"
+        ref="quillEditor"
         v-bind:content="diary.text"
+        v-bind:focused="isToday"
         v-on:change="onEditorChange($event)"
     />
   </div>
@@ -14,6 +15,7 @@
 import { defineComponent } from 'vue';
 import * as bridge from 'bridge';
 import Editor, {EditorChangeEvent} from '@/components/Editor.vue'
+import dayjs from "dayjs";
 
 const Diary = defineComponent({
   components: {
@@ -29,6 +31,12 @@ const Diary = defineComponent({
   data: function () {
     return {
     }
+  },
+  computed: {
+    isToday: function (): boolean {
+      const now = dayjs();
+      return now.year() === this.diary.year && (now.month() + 1) === this.diary.month && now.date() === this.diary.day;
+    },
   },
   methods: {
     onEditorChange: function (change: EditorChangeEvent) {

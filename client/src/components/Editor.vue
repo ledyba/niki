@@ -69,10 +69,18 @@ const Editor = defineComponent({
       type: Object,
       required: false,
       default: () => ({})
+    },
+    focused: {
+      type: Boolean,
+      required: false,
+      default: () => false
     }
   },
   mounted: function() {
     this.initialize();
+    if(this.focused) {
+      this.quill?.focus();
+    }
   },
   beforeUnmount: function() {
     this.quill = null;
@@ -132,6 +140,13 @@ const Editor = defineComponent({
           this.quill.clipboard.dangerouslyPasteHTML(newVal);
         } else if (!newVal) {
           this.quill.setText('')
+        }
+      }
+    },
+    focused: function (newVal, oldVal) {
+      if (this.quill !== null && newVal !== oldVal) {
+        if(newVal) {
+          this.quill.focus();
         }
       }
     },
