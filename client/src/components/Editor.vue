@@ -78,9 +78,10 @@ const Editor = defineComponent({
   },
   mounted: function() {
     this.initialize();
-    if(this.quill !== null && this.focused) {
-      this.quill.focus();
-      this.quill.setSelection(this.quill.getLength(),0);
+    if(this.focused) {
+      window.requestAnimationFrame(()=>{
+        this.focus();
+      });
     }
   },
   beforeUnmount: function() {
@@ -130,6 +131,12 @@ const Editor = defineComponent({
         // Emit ready event
         this.$emit('ready', this.quill);
       }
+    },
+    focus: function () {
+      if(this.quill !== null) {
+        this.quill.focus();
+        this.quill.setSelection(this.quill.getLength(),0);
+      }
     }
   },
   watch: {
@@ -147,7 +154,9 @@ const Editor = defineComponent({
     focused: function (newVal, oldVal) {
       if (this.quill !== null && newVal !== oldVal) {
         if(newVal) {
-          this.quill.focus();
+          window.requestAnimationFrame(()=>{
+            this.focus();
+          });
         }
       }
     },
