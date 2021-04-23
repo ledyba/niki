@@ -78,8 +78,9 @@ const Editor = defineComponent({
   },
   mounted: function() {
     this.initialize();
-    if(this.focused) {
-      this.quill?.focus();
+    if(this.quill !== null && this.focused) {
+      this.quill.focus();
+      this.quill.setSelection(this.quill.getLength(),0);
     }
   },
   beforeUnmount: function() {
