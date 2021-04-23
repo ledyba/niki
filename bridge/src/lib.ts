@@ -19,6 +19,6 @@ export namespace UpdateDiary {
     text: string,
   }
   export interface Response {
-    months: Array<string>
+    months: Array<string> | undefined
   }
 }

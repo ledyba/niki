@@ -103,10 +103,13 @@ const Index = defineComponent({
         this.updateTicket = null;
       }
       this.updateTicket = setTimeout(()=> {
-        this.updateTicket = null;
         updateDiary(event.year, event.month, event.day, event.text)
             .then((resp) => {
-              this.months = resp.months;
+              if(resp.months) {
+                this.months = resp.months;
+              }
+            })
+            .finally(() => {
               this.updateTicket = null;
             });
       }, 200);

@@ -49,13 +49,34 @@ select date, text from diaries
     return diaries;
   }
 
-  async updateDiary(year: number, month: number, day: number, text: string) {
-    // language=PostgreSQL
-    const query = `
-insert into diaries (date, text) values (TO_DATE($1, 'YYYY/MM/DD'), $2)
-ON CONFLICT (date) DO UPDATE SET text = EXCLUDED.text;
-`;
-    const date = `${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}/${('00'+day).slice(-2)}`;
-    await this.pool.query(query, [date, text]);
+  async updateDiary(year: number, month: number, day: number, text: string): Promise<Boolean> {
+    return await this.pool.use(async (cl) => {
+      await cl.query("begin");
+      try {
+        const target = dayjs(new Date(year, month - 1, 1));
+        const begin = target
+          .format('YYYY/MM/DD');
+        const end = target
+          .add(1, 'month')
+          .subtract(1, `day`)
+          .format('YYYY/MM/DD');
+        // language=PostgreSQL
+        const counts = await cl.query(`select cast(count(*) as int) as count from diaries where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'));`, [begin, end]);
+        const existedDiaries = counts.rows[0][0] as number;
+        // language=PostgreSQL
+        const query = `
+            insert into diaries (date, text)
+            values (TO_DATE($1, 'YYYY/MM/DD'), $2)
+            ON CONFLICT (date) DO UPDATE SET text = EXCLUDED.text;
+        `;
+        const date = `${('0000' + year).slice(-4)}/${('00' + month).slice(-2)}/${('00' + day).slice(-2)}`;
+        await cl.query(query, [date, text]);
+        await cl.query('COMMIT;');
+        return existedDiaries === 0;
+      } catch (e) {
+        await cl.query('ROLLBACK;')
+        throw e;
+      }
+    });
   }
 }

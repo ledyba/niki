@@ -73,13 +73,16 @@ export default class Server {
       return;
     }
     const body = req.body as bridge.UpdateDiary.RequestBody;
-    await repo.updateDiary(year, month, day, body.text);
-
-    const months = (await repo.allMonth()).map((it) => it.toString());
-    const r: bridge.UpdateDiary.Response = {
-      months: months,
-    };
-    resp.send(r);
+    const changed = await repo.updateDiary(year, month, day, body.text);
+    if(changed) {
+      const months = (await repo.allMonth()).map((it) => it.toString());
+      const r: bridge.UpdateDiary.Response = {
+        months: months,
+      };
+      resp.send(r);
+    } else {
+      resp.send({} as bridge.UpdateDiary.Response);
+    }
   }
 
   /* from out */
