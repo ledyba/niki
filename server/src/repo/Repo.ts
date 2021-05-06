@@ -15,7 +15,7 @@ export default class Repo {
     const query = `
 select distinct date_part('year', date) as year,
                 date_part('month', date) as month
-                from diaries order by year, month desc;
+                from diaries order by year desc, month desc;
 `;
     const rows = await this.pool.query(query);
     const months: Array<Month> = [];
