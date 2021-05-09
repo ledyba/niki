@@ -3,9 +3,14 @@
     <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
     <Editor
         ref="quillEditor"
+        v-if="isToday"
         v-bind:content="diary.text"
         v-bind:focused="isToday"
         v-on:change="onEditorChange($event)"
+    />
+    <div v-else
+        v-html="diary.text"
+        v-bind:focused="isToday"
     />
   </div>
 </template>

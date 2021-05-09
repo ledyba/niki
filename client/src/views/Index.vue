@@ -117,16 +117,18 @@ const Index = defineComponent({
   }
 })
 export default Index;
-
 </script>
 <style scoped lang="scss">
 .home {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  width: 100%;
+  width: 60em;
+  max-width: 100%;
   height: 100%;
   box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .home > .month-list {
