@@ -38,7 +38,7 @@ wait:
 
 .PHONY: migrate
 migrate:
-	bash db/flyway migrate
+	bash db/flyway-dev migrate
 
 .PHONY: down
 down:
@@ -58,7 +58,7 @@ recreate:
 
 .PHONY: cli
 cli:
-	bash ./db/cli
+	bash ./db/cli-dev
 
 var/psql:
 	mkdir -p "$@"

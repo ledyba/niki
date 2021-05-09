@@ -1,5 +1,5 @@
 ---
-version: '3.7'
+version: '3.9'
 services:
   flyway:
     image: 'flyway/flyway:7.3.1'
@@ -10,6 +10,7 @@ services:
       - './db/flyway_data/conf:/flyway/conf'
     networks:
       - 'default'
+    profiles: ['tool']
 
   web:
     image: 'niki_web'
