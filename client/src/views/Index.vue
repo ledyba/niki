@@ -129,6 +129,8 @@ export default Index;
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
+  border-left: #2c3e50 1px solid;
+  border-right: #2c3e50 1px solid;
 }
 
 .home > .month-list {

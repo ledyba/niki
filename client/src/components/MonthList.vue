@@ -34,6 +34,7 @@ export default MonthList;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.5em;
+  padding-left: 0.5em;
 }
 ul {
   width: 100%;
