@@ -7,7 +7,6 @@
     "dev": "cd .. && bash ./helpers/start-dev.sh",
     "watch": "ts-node-dev src/main.ts",
     "server": "ts-node src/main.ts",
-    "build": "tsc",
     "up": "npm-check-updates --upgrade && npm install && npm audit fix"
   },
   "author": "Kaede Fujisaki",
