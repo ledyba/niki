@@ -4,9 +4,9 @@
   "description": "A simple diary",
   "main": "main.js",
   "scripts": {
-    "dev": "cd .. && bash ./helpers/start-dev.sh",
+    "serve": "ts-node src/main.ts",
+    "build": "tsc",
     "watch": "ts-node-dev src/main.ts",
-    "server": "ts-node src/main.ts",
     "up": "npm-check-updates --upgrade && npm install && npm audit fix"
   },
   "author": "Kaede Fujisaki",

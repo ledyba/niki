@@ -10,16 +10,25 @@ dev:
 ## build
 ########################################################################################################################
 
-.PHONY: build
-build: bridge client ;
+.PHONY: FORCE
+FORCE: ;
 
-.PHONY: bridge
-bridge:
+.PHONY: build
+build:
+	$(MAKE) build-bridge
+	$(MAKE) -j2 build-client build-server
+
+.PHONY: build-bridge
+build-bridge: FORCE
 	cd bridge && npm run build
 
-.PHONY: client
-client:
+.PHONY: build-client
+build-client: FORCE
 	cd client && npm run build
+
+.PHONY: build-server
+build-server: FORCE
+	cd server && npm run build
 
 ########################################################################################################################
 ## DB
