@@ -43,15 +43,29 @@ export default class Server {
 
   private setup() {
     // API endpoints
-    this.app.get('/diaries/:year([0-9]{4})/:month([0-9]{2})', this.diaries.bind(this));
-    this.app.post('/diaries/:year([0-9]{4})/:month([0-9]{2})/:day([0-9]{2})', this.updateDiary.bind(this));
+    this.app.get('/diaries/:year(^[0-9]{4}$)/:month(^[0-9]{2}$)', this.diaries.bind(this));
+    this.app.post('/diaries/:year(^[0-9]{4}$)/:month(^[0-9]{2}$)/:day(^[0-9]{2}$)', this.updateDiary.bind(this));
+
+    /**
+     * https://www.fastify.io/docs/latest/Routes/
+     * > Remember that static routes are always checked before parametric and wildcard.
+     */
 
     // Client files
     this.app.register(fastifyStatic, {
-      root:  path.join(__dirname, '..', '..', 'client', 'dist'),
-      prefix: '/',
-      etag: false,
+      root: path.join(__dirname, '..', '..', 'client', 'dist'),
+      serve: false,
     });
+    const kDirRegexp = /^\/[0-9]{4}\/[0-9]{2}/;
+    this.app.get('/*', async (req, reply) => {
+      if(kDirRegexp.test(req.url)) {
+        reply.redirect('/');
+      } else {
+        const root = path.join(__dirname, '..', '..', 'client', 'dist');
+        reply.sendFile(req.url, root);
+      }
+    });
+
   }
 
   /* API endpoints */
@@ -97,6 +111,7 @@ export default class Server {
 
   /* from out */
   async start(): Promise<string> {
+    this.app.ready().then(() => console.log(this.app.printRoutes()));
     return this.app.listen(this.port, '::');
   }
 }
