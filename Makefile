@@ -36,7 +36,7 @@ build-server: FORCE
 
 .PHONY: up
 up: var/psql
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml up -d db
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml up -d
 	$(MAKE) wait
 
 .PHONY: wait
@@ -64,7 +64,6 @@ recreate:
 	$(MAKE) down
 	$(MAKE) clean
 	$(MAKE) up
-	$(MAKE) wait
 	$(MAKE) migrate
 
 .PHONY: cli
