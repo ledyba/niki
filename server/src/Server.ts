@@ -1,60 +1,66 @@
-import express from 'express';
+import fastify, {FastifyRequest, FastifyReply, FastifyInstance, RequestGenericInterface } from 'fastify';
+import fastifyStatic from 'fastify-static'
 import dayjs from 'dayjs';
 import * as bridge from 'bridge';
 import Repo from "./repo/Repo";
 import Pool from "./repo/Pool";
+import path from 'path';
 
 const DATABASE_HOST = process.env['DATABASE_HOST'] || 'localhost';
 
-/**
-# express docs
-http://expressjs.com/ja/4x/api.html
- */
+interface IDiariesRequest extends RequestGenericInterface {
+  Params: {
+    yaer: number;
+    month: number;
+  }
+}
+interface IUpdateDiaryRequest extends RequestGenericInterface {
+  Params: {
+    yaer: number;
+    month: number;
+    day: number;
+  }
+}
 
 /**
  * Server
  */
 export default class Server {
   private readonly port: number;
-  private readonly app: express.Express;
+  private readonly app: FastifyInstance;
   private readonly db: Pool;
 
   constructor(port: number) {
     this.port = port;
-    this.app = express();
+    this.app = fastify({
+      logger: true,
+      bodyLimit: 256*1024*1024,
+      maxParamLength: 1024*1024,
+    });
     this.db = new Pool(DATABASE_HOST);
     this.setup();
   }
 
   private setup() {
-    this.app.set('etag', false);
-    // FIXME: wrong type definition?
-    // @ts-ignore
-    this.app.use(express.json({ limit: '128mb' }));
-    // FIXME: wrong type definition?
-    // @ts-ignore
-    this.app.use(express.urlencoded({ limit: '128mb', extended: true, parameterLimit: 1280000 }));
-
     // API endpoints
-    this.app.get('^/diaries/:year([0-9]{4})/:month([0-9]{2})', this.diaries.bind(this));
+    this.app.get('/diaries/:year([0-9]{4})/:month([0-9]{2})', this.diaries.bind(this));
     this.app.post('/diaries/:year([0-9]{4})/:month([0-9]{2})/:day([0-9]{2})', this.updateDiary.bind(this));
 
     // Client files
-    this.app.use('^/:year([0-9]{4})/:month([0-9]{2})', express.static("../client/dist", {
-      etag: false
-    }));
-    this.app.use(express.static("../client/dist", {
-      etag: false
-    }));
+    this.app.register(fastifyStatic, {
+      root:  path.join(__dirname, '..', '..', 'client', 'dist'),
+      prefix: '/',
+      etag: false,
+    });
   }
 
   /* API endpoints */
-  private async diaries(req: express.Request, resp: express.Response) {
+  private async diaries(req: FastifyRequest<IDiariesRequest>, reply: FastifyReply) {
     const repo = new Repo(this.db);
 
     const [year, month] = (()=>{
-      const y = parseInt(req.params['year'] as string || '');
-      const m = parseInt(req.params['month'] as string || '');
+      const y = req.params.yaer;
+      const m = req.params.month;
       return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
     })();
 
@@ -64,16 +70,16 @@ export default class Server {
       months: months,
       diaries: texts,
     };
-    resp.send(r);
+    reply.send(r);
   }
-  private async updateDiary(req: express.Request, resp: express.Response) {
+  private async updateDiary(req: FastifyRequest<IUpdateDiaryRequest>, reply: FastifyReply) {
     const repo = new Repo(this.db);
-    const year = parseInt(req.params['year'] as string || '');
-    const month = parseInt(req.params['month'] as string || '');
-    const day = parseInt(req.params['day'] as string || '');
+    const year = req.params.yaer;
+    const month = req.params.month;
+    const day = req.params.day;
     if(isNaN(year) || isNaN(month) || isNaN(day)) {
-      resp.status(400);
-      resp.send("Specify date correctly.");
+      reply.status(400);
+      reply.send("Specify date correctly.");
       return;
     }
     const body = req.body as bridge.UpdateDiary.RequestBody;
@@ -83,20 +89,14 @@ export default class Server {
       const r: bridge.UpdateDiary.Response = {
         months: months,
       };
-      resp.send(r);
+      reply.send(r);
     } else {
-      resp.send({} as bridge.UpdateDiary.Response);
+      reply.send({} as bridge.UpdateDiary.Response);
     }
   }
 
   /* from out */
-  start(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        this.app.listen(this.port, () => { resolve(); });
-      } catch (err) {
-        reject(err)
-      }
-    });
+  async start(): Promise<string> {
+    return this.app.listen(this.port, '::');
   }
 }

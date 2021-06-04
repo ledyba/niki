@@ -6,5 +6,4 @@ async function main() {
 }
 
 main()
-  .then(() => console.log(`Server launched`))
   .catch((err) => console.error(err));
