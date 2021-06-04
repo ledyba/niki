@@ -57,10 +57,20 @@ const Index = defineComponent({
       months: Array<string>(),
       diaries: Array<bridge.Entity.Diary>(),
       updateTicket: null as number | null,
+      saveHandler: function (event: KeyboardEvent) {
+        if (!(event.key.toLowerCase() == 's' && event.ctrlKey)) return true;
+        event.preventDefault();
+        this.updateDiaries();
+        return false;
+      }.bind(this)
     };
   },
   beforeMount: function() {
+    window.addEventListener('keydown', this.saveHandler);
     this.updateDiaries();
+  },
+  beforeUnmount: function() {
+    window.removeEventListener('keydown', this.saveHandler);
   },
   beforeRouteUpdate: function(route) {
     this.year = parseIntArg(route.params.year as string) || dayjs().year();

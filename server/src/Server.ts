@@ -28,7 +28,11 @@ export default class Server {
 
   private setup() {
     this.app.set('etag', false);
+    // FIXME: wrong type definition?
+    // @ts-ignore
     this.app.use(express.json({ limit: '128mb' }));
+    // FIXME: wrong type definition?
+    // @ts-ignore
     this.app.use(express.urlencoded({ limit: '128mb', extended: true, parameterLimit: 1280000 }));
 
     // API endpoints
