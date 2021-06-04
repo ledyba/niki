@@ -57,20 +57,15 @@ const Index = defineComponent({
       months: Array<string>(),
       diaries: Array<bridge.Entity.Diary>(),
       updateTicket: null as number | null,
-      saveHandler: function (event: KeyboardEvent) {
-        if (!(event.key.toLowerCase() == 's' && event.ctrlKey)) return true;
-        event.preventDefault();
-        this.updateDiaries();
-        return false;
-      }.bind(this)
+      saveHandler_: this.saveHandler.bind(this),
     };
   },
   beforeMount: function() {
-    window.addEventListener('keydown', this.saveHandler);
+    window.addEventListener('keydown', this.saveHandler_);
     this.updateDiaries();
   },
   beforeUnmount: function() {
-    window.removeEventListener('keydown', this.saveHandler);
+    window.removeEventListener('keydown', this.saveHandler_);
   },
   beforeRouteUpdate: function(route) {
     this.year = parseIntArg(route.params.year as string) || dayjs().year();
@@ -78,6 +73,12 @@ const Index = defineComponent({
     this.updateDiaries();
   },
   methods: {
+    saveHandler: function (event: KeyboardEvent) {
+      if (!(event.key.toLowerCase() == 's' && event.ctrlKey)) return true;
+      event.preventDefault();
+      this.updateDiaries();
+      return false;
+    },
     updateDiaries: function () {
       fetchDiaries(this.year, this.month)
           .then((resp) => {
