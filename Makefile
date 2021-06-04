@@ -36,12 +36,12 @@ build-server: FORCE
 
 .PHONY: up
 up: var/psql
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose-dev.yml up -d db
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml up -d db
 	$(MAKE) wait
 
 .PHONY: wait
 wait:
-	@UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose-dev.yml run \
+	@UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml run \
 		--rm \
 		--use-aliases \
 		db \
@@ -53,7 +53,7 @@ migrate:
 
 .PHONY: down
 down:
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose-dev.yml down
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml down
 
 .PHONY: clean
 clean:

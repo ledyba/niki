@@ -6,7 +6,7 @@ cd "${REPO_DIR}" || exit 1
 set -eu
 set -o pipefail
 
-env UID="$(id -u)" GID="$(id -g)" docker-compose -f docker-compose-dev.yml --profile tool run \
+env UID="$(id -u)" GID="$(id -g)" docker-compose -f docker-compose.dev.yml --profile tool run \
   --rm \
   --user "$(id -u)" \
 	--use-aliases \
