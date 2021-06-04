@@ -52,8 +52,9 @@ export default class Server {
      */
 
     // Client files
+    const root = path.join(__dirname, '..', '..', 'client', 'dist');
     this.app.register(fastifyStatic, {
-      root: path.join(__dirname, '..', '..', 'client', 'dist'),
+      root: root,
       serve: false,
     });
     const kDirRegexp = /^\/[0-9]{4}\/[0-9]{2}/;
@@ -61,8 +62,7 @@ export default class Server {
       if(kDirRegexp.test(req.url)) {
         reply.redirect('/');
       } else {
-        const root = path.join(__dirname, '..', '..', 'client', 'dist');
-        reply.sendFile(req.url, root);
+        reply.sendFile(req.url);
       }
     });
 
