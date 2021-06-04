@@ -12,4 +12,4 @@ RUN npm install -g npm@latest \
 EXPOSE 8888
 
 WORKDIR /usr/src/app/server
-CMD [ "node", "dist/main.js" ]
+CMD [ "node dist/main.js" ]
