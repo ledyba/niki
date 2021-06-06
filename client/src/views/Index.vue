@@ -76,7 +76,6 @@ const Index = defineComponent({
     saveHandler: function (event: KeyboardEvent) {
       if (!(event.key.toLowerCase() == 's' && event.ctrlKey)) return true;
       event.preventDefault();
-      this.updateDiaries();
       return false;
     },
     updateDiaries: function () {

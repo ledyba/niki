@@ -10,15 +10,15 @@ const DATABASE_HOST = process.env['DATABASE_HOST'] || 'localhost';
 
 interface IDiariesRequest extends RequestGenericInterface {
   Params: {
-    yaer: number;
-    month: number;
+    year: string;
+    month: string;
   }
 }
 interface IUpdateDiaryRequest extends RequestGenericInterface {
   Params: {
-    yaer: number;
-    month: number;
-    day: number;
+    year: string;
+    month: string;
+    day: string;
   }
 }
 
@@ -73,8 +73,8 @@ export default class Server {
     const repo = new Repo(this.db);
 
     const [year, month] = (()=>{
-      const y = req.params.yaer;
-      const m = req.params.month;
+      const y = parseInt(req.params.year, 10);
+      const m = parseInt(req.params.month, 10);
       return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
     })();
 
@@ -86,11 +86,13 @@ export default class Server {
     };
     reply.send(r);
   }
+
   private async updateDiary(req: FastifyRequest<IUpdateDiaryRequest>, reply: FastifyReply) {
     const repo = new Repo(this.db);
-    const year = req.params.yaer;
-    const month = req.params.month;
-    const day = req.params.day;
+    const year = parseInt(req.params.year, 10);
+    const month = parseInt(req.params.month, 10);
+    const day = parseInt(req.params.day, 10);
+
     if(isNaN(year) || isNaN(month) || isNaN(day)) {
       reply.status(400);
       reply.send("Specify date correctly.");
