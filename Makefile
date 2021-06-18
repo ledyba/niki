@@ -59,6 +59,11 @@ down:
 clean:
 	rm -Rfv var
 
+.PNONY: reload
+reload:
+	$(MAKE) down
+	$(MAKE) up
+
 .PNONY: recreate
 recreate:
 	$(MAKE) down
