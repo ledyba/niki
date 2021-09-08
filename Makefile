@@ -30,6 +30,12 @@ build-client: FORCE
 build-server: FORCE
 	cd server && npm run build
 
+.PHONY: upgrade
+upgrade: FORCE
+	cd bridge && npm run up
+	cd server && npm run up
+	cd client && npm run up
+
 ########################################################################################################################
 ## DB
 ########################################################################################################################
