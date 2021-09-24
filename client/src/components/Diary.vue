@@ -56,12 +56,13 @@ const Diary = defineComponent({
 });
 
 export default Diary;
-export interface DiaryChangeEvent {
+interface DiaryChangeEvent {
   year: number,
   month: number,
   day: number,
   text: string,
 }
+export { DiaryChangeEvent };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
