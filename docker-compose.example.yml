@@ -33,6 +33,7 @@ services:
     image: 'postgres:13-alpine'
     container_name: 'niki_db'
     hostname: 'niki_db'
+    user: "${UID}:${GID}"
     restart: always
     environment:
       POSTGRES_DB: 'niki'
