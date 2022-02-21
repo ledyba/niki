@@ -30,7 +30,7 @@ services:
       - 'default'
 
   db:
-    image: 'postgres:alpine'
+    image: 'postgres:13-alpine'
     container_name: 'niki_db'
     hostname: 'niki_db'
     restart: always
@@ -54,3 +54,4 @@ services:
 networks:
   default:
     external: false
+

@@ -42,12 +42,12 @@ upgrade: FORCE
 
 .PHONY: up
 up: var/psql
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml up -d
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml up -d
 	$(MAKE) wait
 
 .PHONY: wait
 wait:
-	@UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml run \
+	@UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml run \
 		--rm \
 		--use-aliases \
 		db \
@@ -59,11 +59,15 @@ migrate:
 
 .PHONY: down
 down:
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.dev.yml down
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml down
 
 .PHONY: clean
 clean:
 	rm -Rfv var
+
+.PHONY: log
+log:
+	docker-compose logs -f --tail 0
 
 .PNONY: reload
 reload:
@@ -79,7 +83,7 @@ recreate:
 
 .PHONY: cli
 cli:
-	bash ./db/cli-dev
+	bash ./db/cli
 
 var/psql:
 	mkdir -p "$@"

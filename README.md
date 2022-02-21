@@ -70,3 +70,7 @@ server {
 }
 
 ```
+
+## Upgrading database
+
+See [this article](https://josepostiga.com/how-to-upgrade-postgresql-version-and-transfer-your-old-data-using-docker/).

@@ -16,7 +16,7 @@ export default class Pool {
       create: async (): Promise<Client> => {
         const client = new Client(opt);
         try {
-          const timeout = new Promise((resolve, reject) => setTimeout(() => reject(new Error("Connection Timed out")), 500));
+          const timeout = new Promise((resolve, reject) => setTimeout(() => reject(new Error("Connection Timed out")), 1000));
           await Promise.race([client.connect(), timeout]);
           client.on('error', console.error);
           return client;

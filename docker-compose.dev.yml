@@ -14,7 +14,7 @@ services:
     profiles: ['tool']
 
   db:
-    image: 'postgres:alpine'
+    image: 'postgres:13-alpine'
     container_name: 'niki_dev_db'
     hostname: 'niki_dev_db'
     user: "${UID}:${GID}"

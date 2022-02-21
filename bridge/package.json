@@ -14,7 +14,7 @@
   "author": "Kaede Fujisaki",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "npm-check-updates": "^11.8.5",
-    "typescript": "^4.4.4"
+    "npm-check-updates": "^12.4.0",
+    "typescript": "^4.5.5"
   }
 }
