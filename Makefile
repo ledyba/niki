@@ -42,12 +42,12 @@ upgrade: FORCE
 
 .PHONY: up
 up: var/psql
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml up -d
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose up -d
 	$(MAKE) wait
 
 .PHONY: wait
 wait:
-	@UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml run \
+	@UID=$(shell id -u) GID=$(shell id -g) docker-compose run \
 		--rm \
 		--use-aliases \
 		db \
@@ -55,15 +55,15 @@ wait:
 
 .PHONY: migrate
 migrate:
-	bash db/flyway-dev migrate
+	bash db/flyway migrate
 
 .PHONY: down
 down:
-	UID=$(shell id -u) GID=$(shell id -g) docker-compose -f docker-compose.yml down
+	UID=$(shell id -u) GID=$(shell id -g) docker-compose down
 
-.PHONY: clean
-clean:
-	rm -Rfv var
+.PHONY: backup
+backup:
+	sudo bash _helpers/backup.sh $(shell id -g) $(shell id -u) var
 
 .PHONY: log
 log:
@@ -73,13 +73,6 @@ log:
 reload:
 	$(MAKE) down
 	$(MAKE) up
-
-.PNONY: recreate
-recreate:
-	$(MAKE) down
-	$(MAKE) clean
-	$(MAKE) up
-	$(MAKE) migrate
 
 .PHONY: cli
 cli:

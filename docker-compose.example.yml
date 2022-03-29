@@ -20,7 +20,7 @@ services:
     hostname: 'niki_web'
     environment:
       DATABASE_HOST: 'db'
-    restart: always
+    restart: 'always'
     ports:
       - '8888:8888'
       # To protect your diary, please replace with this line and protect using reverse proxy.
