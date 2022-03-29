@@ -2,6 +2,7 @@
 /var
 .idea/dataSources.xml
 core
+/*.tar.gz
 
 # Created by https://www.toptal.com/developers/gitignore/api/webstorm,vscode,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=webstorm,vscode,node
