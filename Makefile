@@ -63,7 +63,9 @@ down:
 
 .PHONY: backup
 backup:
+	$(MAKE) down
 	sudo bash _helpers/backup.sh $(shell id -g) $(shell id -u) var
+	$(MAKE) up
 
 .PHONY: log
 log:

@@ -14,3 +14,4 @@ EXPOSE 8888
 WORKDIR /usr/src/app/server
 ENTRYPOINT [ "node" ]
 CMD ["dist/main.js"]
+
