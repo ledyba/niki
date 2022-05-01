@@ -1,7 +1,7 @@
 <template>
   <div class="diary">
     <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
-    <Editor
+    <DiaryEditor
         ref="quillEditor"
         v-if="isToday"
         v-bind:content="diary.text"
@@ -19,12 +19,13 @@
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
 import { defineComponent } from 'vue';
 import * as protocol from 'protocol';
-import Editor, {EditorChangeEvent} from '@/components/Editor.vue'
+import DiaryEditor, {EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import dayjs from 'dayjs';
 
-const Diary = defineComponent({
+// eslint-disable-next-line
+const DiaryEntry = defineComponent({
   components: {
-    Editor,
+    DiaryEditor,
   },
   props: {
     diary: {
@@ -55,7 +56,7 @@ const Diary = defineComponent({
   }
 });
 
-export default Diary;
+export default DiaryEntry;
 interface DiaryChangeEvent {
   year: number,
   month: number,

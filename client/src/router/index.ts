@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import Home from '../views/Index.vue'
+import IndexPage from '../views/IndexPage.vue'
 import dayjs from 'dayjs';
 
 const routes: Array<RouteRecordRaw> = [
@@ -15,7 +15,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/:year/:month',
     name: 'MonthList',
-    component: Home
+    component: IndexPage
   },
 //  {
 //    path: '/about',

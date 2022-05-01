@@ -6,12 +6,12 @@
 </template>
 
 <script lang="ts">
-import MonthList from "@/components/MonthList.vue";
+import MonthList from '@/components/MonthList.vue';
 import DiaryList from '@/components/DiaryList.vue'
+import {DiaryChangeEvent} from '@/components/DiaryEntry.vue';
 import * as protocol from 'protocol'
-import { defineComponent } from "vue";
-import {DiaryChangeEvent} from "@/components/Diary.vue";
-import dayjs from "dayjs";
+import { defineComponent } from 'vue';
+import dayjs from 'dayjs';
 
 function parseIntArg(str: string): number | null {
   const parsed = parseInt(str, 10);
@@ -43,7 +43,7 @@ async function updateDiary(year: number, month: number, day: number, text: strin
   return json as protocol.Diaries.Response;
 }
 
-const Index = defineComponent({
+const IndexPage = defineComponent({
   components: {
     MonthList,
     DiaryList,
@@ -126,7 +126,7 @@ const Index = defineComponent({
     }
   }
 })
-export default Index;
+export default IndexPage;
 </script>
 <style scoped lang="scss">
 .home {

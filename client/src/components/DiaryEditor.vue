@@ -44,7 +44,7 @@ const defaultOptions: QuillOptionsStatic = {
   readOnly: false
 }
 
-const Editor = defineComponent({
+const DiaryEditor = defineComponent({
   name: 'quill-editor',
   data: function() {
     return {
@@ -169,7 +169,7 @@ const Editor = defineComponent({
   }
 });
 
-export default Editor;
+export default DiaryEditor;
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

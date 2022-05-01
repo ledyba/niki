@@ -1,19 +1,22 @@
 <template>
   <div class="diary-list">
     <div class="diary" v-for="diary in diaries" :key="diary.year + '/' + diary.month + '/' + diary.day">
-      <Diary v-bind:diary="diary" v-on:change="onDiaryChange($event)"></Diary>
+      <DiaryEntry
+        v-bind:diary="diary"
+        v-on:change="onDiaryChange($event)">
+      </DiaryEntry>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import Diary, {DiaryChangeEvent} from '@/components/Diary.vue'
+import DiaryEntry, {DiaryChangeEvent} from '@/components/DiaryEntry.vue'
 import * as protocol from 'protocol';
 
 const DiaryList = defineComponent({
   components: {
-    Diary,
+    DiaryEntry,
   },
   data: function() {
     return {
