@@ -62,7 +62,6 @@ export default class Server {
       if(kDirRegexp.test(req.url)) {
         reply.redirect('/');
       } else {
-        reply.send()
         reply.sendFile(req.url);
       }
     });
