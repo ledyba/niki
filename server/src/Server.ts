@@ -1,7 +1,7 @@
 import fastify, {FastifyRequest, FastifyReply, FastifyInstance, RequestGenericInterface } from 'fastify';
-import fastifyStatic from 'fastify-static'
+import fastifyStatic from '@fastify/static';
 import dayjs from 'dayjs';
-import * as bridge from 'bridge';
+import * as protocol from 'protocol';
 import Repo from "./repo/Repo";
 import Pool from "./repo/Pool";
 import path from 'path';
@@ -62,6 +62,7 @@ export default class Server {
       if(kDirRegexp.test(req.url)) {
         reply.redirect('/');
       } else {
+        reply.send()
         reply.sendFile(req.url);
       }
     });
@@ -80,7 +81,7 @@ export default class Server {
 
     const months = (await repo.allMonth()).map((it) => it.toString());
     const texts =await repo.readDiaries(year, month);
-    const r: bridge.Diaries.Response = {
+    const r: protocol.Diaries.Response = {
       months: months,
       diaries: texts,
     };
@@ -98,16 +99,16 @@ export default class Server {
       reply.send("Specify date correctly.");
       return;
     }
-    const body = req.body as bridge.UpdateDiary.RequestBody;
+    const body = req.body as protocol.UpdateDiary.RequestBody;
     const changed = await repo.updateDiary(year, month, day, body.text);
     if(changed) {
       const months = (await repo.allMonth()).map((it) => it.toString());
-      const r: bridge.UpdateDiary.Response = {
+      const r: protocol.UpdateDiary.Response = {
         months: months,
       };
       reply.send(r);
     } else {
-      reply.send({} as bridge.UpdateDiary.Response);
+      reply.send({} as protocol.UpdateDiary.Response);
     }
   }
 

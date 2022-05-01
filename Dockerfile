@@ -1,13 +1,13 @@
-FROM node:current-alpine
+FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
 COPY . .
 
 RUN npm install -g npm@latest \
- && (cd bridge && npm ci && npm run build) \
- && (cd client && npm ci && npm run build) \
- && (cd server && npm ci && npm run build)
+  && (cd protocol && npm ci && npm run build) \
+  && (cd client && npm ci && npm run build) \
+  && (cd server && npm ci && npm run build)
 
 EXPOSE 8888
 

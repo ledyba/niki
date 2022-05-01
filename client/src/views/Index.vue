@@ -8,7 +8,7 @@
 <script lang="ts">
 import MonthList from "@/components/MonthList.vue";
 import DiaryList from '@/components/DiaryList.vue'
-import * as bridge from 'bridge'
+import * as protocol from 'protocol'
 import { defineComponent } from "vue";
 import {DiaryChangeEvent} from "@/components/Diary.vue";
 import dayjs from "dayjs";
@@ -21,13 +21,13 @@ function parseIntArg(str: string): number | null {
   return parsed;
 }
 
-async function fetchDiaries(year: number, month: number): Promise<bridge.Diaries.Response> {
+async function fetchDiaries(year: number, month: number): Promise<protocol.Diaries.Response> {
   const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}`);
   const json = await raw.json();
-  return json as bridge.Diaries.Response;
+  return json as protocol.Diaries.Response;
 }
 
-async function updateDiary(year: number, month: number, day: number, text: string): Promise<bridge.UpdateDiary.Response> {
+async function updateDiary(year: number, month: number, day: number, text: string): Promise<protocol.UpdateDiary.Response> {
   const param  = {
     method: 'post',
     headers: {
@@ -36,11 +36,11 @@ async function updateDiary(year: number, month: number, day: number, text: strin
     // リクエストボディ
     body: JSON.stringify({
       text: text,
-    } as bridge.UpdateDiary.RequestBody)
+    } as protocol.UpdateDiary.RequestBody)
   };
   const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}/${('00'+day).slice(-2)}`, param);
   const json = await raw.json();
-  return json as bridge.Diaries.Response;
+  return json as protocol.Diaries.Response;
 }
 
 const Index = defineComponent({
@@ -55,7 +55,7 @@ const Index = defineComponent({
       year: year,
       month: month,
       months: Array<string>(),
-      diaries: Array<bridge.Entity.Diary>(),
+      diaries: Array<protocol.Entity.Diary>(),
       updateTicket: null as number | null,
       saveHandler_: this.saveHandler.bind(this),
     };
@@ -95,7 +95,7 @@ const Index = defineComponent({
               alreadyPosted = first.year === now.year() && first.month === now.month() + 1 && first.day === now.date();
             }
             if(!alreadyPosted && this.year === now.year() && this.month === now.month()+1) {
-              const diary: bridge.Entity.Diary = {
+              const diary: protocol.Entity.Diary = {
                 year: now.year(),
                 month: now.month() + 1,
                 day: now.date(),

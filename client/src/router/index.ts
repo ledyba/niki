@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import Home from '../views/Index.vue'
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 
 const routes: Array<RouteRecordRaw> = [
   {

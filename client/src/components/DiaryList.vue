@@ -9,7 +9,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import Diary, {DiaryChangeEvent} from '@/components/Diary.vue'
-import * as bridge from 'bridge';
+import * as protocol from 'protocol';
 
 const DiaryList = defineComponent({
   components: {
@@ -23,7 +23,7 @@ const DiaryList = defineComponent({
     diaries: {
       type: Array,
       required: false,
-      default: () => { return ([] as Array<bridge.Entity.Diary>); },
+      default: () => { return ([] as Array<protocol.Entity.Diary>); },
     },
   },
   methods: {

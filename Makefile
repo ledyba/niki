@@ -15,12 +15,12 @@ FORCE: ;
 
 .PHONY: build
 build:
-	$(MAKE) build-bridge
+	$(MAKE) build-protocol
 	$(MAKE) -j2 build-client build-server
 
-.PHONY: build-bridge
-build-bridge: FORCE
-	cd bridge && npm run build
+.PHONY: build-protocol
+build-protocol: FORCE
+	cd protocol && npm run build
 
 .PHONY: build-client
 build-client: FORCE
@@ -32,7 +32,7 @@ build-server: FORCE
 
 .PHONY: upgrade
 upgrade: FORCE
-	cd bridge && npm run up
+	cd protocol && npm run up
 	cd server && npm run up
 	cd client && npm run up
 

@@ -18,9 +18,9 @@
 <script lang="ts">
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
 import { defineComponent } from 'vue';
-import * as bridge from 'bridge';
+import * as protocol from 'protocol';
 import Editor, {EditorChangeEvent} from '@/components/Editor.vue'
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 
 const Diary = defineComponent({
   components: {
@@ -30,7 +30,7 @@ const Diary = defineComponent({
     diary: {
       type: Object,
       required: false,
-      default: () => ({} as bridge.Entity.Diary)
+      default: () => ({} as protocol.Entity.Diary)
     },
   },
   data: function () {
