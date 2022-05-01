@@ -14,21 +14,9 @@ dev:
 FORCE: ;
 
 .PHONY: build
-build:
-	$(MAKE) build-protocol
-	$(MAKE) -j2 build-client build-server
-
-.PHONY: build-protocol
-build-protocol: FORCE
-	cd protocol && npm run build
-
-.PHONY: build-client
-build-client: FORCE
-	cd client && npm run build
-
-.PHONY: build-server
-build-server: FORCE
-	cd server && npm run build
+build: FORCE
+	UID=$(shell id -u) GID=$(shell id -g) \
+		docker-compose build
 
 .PHONY: upgrade
 upgrade: FORCE
@@ -76,8 +64,8 @@ reload:
 	$(MAKE) down
 	$(MAKE) up
 
-.PHONY: cli
-cli:
+.PHONY: db-cli
+db-cli:
 	bash ./db/cli
 
 var/psql:
