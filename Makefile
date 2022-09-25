@@ -51,9 +51,7 @@ down:
 
 .PHONY: backup
 backup:
-	$(MAKE) down
-	sudo bash _helpers/backup.sh $(shell id -g) $(shell id -u) var
-	$(MAKE) up
+	sudo bash _scripts/backup.sh $(shell id -g) $(shell id -u) var
 
 .PHONY: log
 log:
@@ -70,3 +68,4 @@ db-cli:
 
 var/psql:
 	mkdir -p "$@"
+

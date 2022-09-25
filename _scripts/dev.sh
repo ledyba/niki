@@ -21,3 +21,4 @@ function kill_all() {
 wait "${BRG}"
 wait "${CLI}"
 wait "${SRV}"
+
