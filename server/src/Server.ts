@@ -1,4 +1,4 @@
-import fastify, {FastifyRequest, FastifyReply, FastifyInstance, RequestGenericInterface } from 'fastify';
+import fastify, {FastifyInstance, FastifyReply, FastifyRequest, RequestGenericInterface} from 'fastify';
 import fastifyStatic from '@fastify/static';
 import dayjs from 'dayjs';
 import * as protocol from 'protocol';
@@ -65,11 +65,10 @@ export default class Server {
         reply.sendFile(req.url);
       }
     });
-
   }
 
   /* API endpoints */
-  private async diaries(req: FastifyRequest<IDiariesRequest>, reply: FastifyReply) {
+  private async diaries(req: FastifyRequest<IDiariesRequest>, reply: FastifyReply): Promise<protocol.Diaries.Response> {
     const repo = new Repo(this.db);
 
     const [year, month] = (()=>{
@@ -79,41 +78,41 @@ export default class Server {
     })();
 
     const months = (await repo.allMonth()).map((it) => it.toString());
-    const texts =await repo.readDiaries(year, month);
-    const r: protocol.Diaries.Response = {
+    const texts = await repo.readDiaries(year, month);
+    return {
       months: months,
       diaries: texts,
     };
-    reply.send(r);
   }
 
-  private async updateDiary(req: FastifyRequest<IUpdateDiaryRequest>, reply: FastifyReply) {
+  private async updateDiary(req: FastifyRequest<IUpdateDiaryRequest>, reply: FastifyReply): Promise<protocol.UpdateDiary.Response | string> {
     const repo = new Repo(this.db);
     const year = parseInt(req.params.year, 10);
     const month = parseInt(req.params.month, 10);
     const day = parseInt(req.params.day, 10);
 
     if(isNaN(year) || isNaN(month) || isNaN(day)) {
-      reply.status(400);
-      reply.send("Specify date correctly.");
-      return;
+      reply.header('Content-Type', 'text/plain').status(400);
+      return 'Specify date correctly.';
     }
     const body = req.body as protocol.UpdateDiary.RequestBody;
     const changed = await repo.updateDiary(year, month, day, body.text);
     if(changed) {
       const months = (await repo.allMonth()).map((it) => it.toString());
-      const r: protocol.UpdateDiary.Response = {
+      return {
         months: months,
-      };
-      reply.send(r);
+      } as protocol.UpdateDiary.Response;
     } else {
-      reply.send({} as protocol.UpdateDiary.Response);
+      return {} as protocol.UpdateDiary.Response;
     }
   }
 
   /* from out */
   async start(): Promise<string> {
     this.app.ready().then(() => console.log(this.app.printRoutes()));
-    return this.app.listen(this.port, '::');
+    return this.app.listen({
+      port: this.port,
+      host: '::',
+    });
   }
 }
