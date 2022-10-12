@@ -60,9 +60,9 @@ export default class Server {
     const kDirRegexp = /^\/[0-9]{4}\/[0-9]{2}/;
     this.app.get('/*', async (req, reply) => {
       if(kDirRegexp.test(req.url)) {
-        reply.redirect('/');
+        return reply.redirect('/');
       } else {
-        reply.sendFile(req.url);
+        return reply.sendFile(req.url);
       }
     });
   }
@@ -77,6 +77,7 @@ export default class Server {
       return (!isNaN(y) && !isNaN(m)) ? [y, m] : [dayjs().year(), (dayjs().month() + 1)];
     })();
 
+    reply.header('Content-Type', 'application/json;charset=UTF-8').status(200);
     const months = (await repo.allMonth()).map((it) => it.toString());
     const texts = await repo.readDiaries(year, month);
     return {
@@ -95,6 +96,7 @@ export default class Server {
       reply.header('Content-Type', 'text/plain').status(400);
       return 'Specify date correctly.';
     }
+    reply.header('Content-Type', 'application/json;charset=UTF-8').status(200);
     const body = req.body as protocol.UpdateDiary.RequestBody;
     const changed = await repo.updateDiary(year, month, day, body.text);
     if(changed) {
