@@ -67,9 +67,10 @@ export { DiaryChangeEvent };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
-a {
-  color: #ffffff;
-  text-decoration: none;
+<!-- FIXME: scoped not working well -->
+<style lang="scss">
+img {
+  max-width: 100%;
+  height: auto;
 }
 </style>
