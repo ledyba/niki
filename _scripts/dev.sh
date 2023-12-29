@@ -4,7 +4,7 @@ cd "${ROOT_DIR}" || exit 1
 
 set -eu
 set -o pipefail
-(cd bridge && npm run watch) &
+(cd protocol && npm run watch) &
 BRG="$!"
 (cd client && npm run watch) &
 CLI="$!"
@@ -21,4 +21,3 @@ function kill_all() {
 wait "${BRG}"
 wait "${CLI}"
 wait "${SRV}"
-

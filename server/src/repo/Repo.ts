@@ -20,7 +20,7 @@ select distinct date_part('year', date) as year,
     const rows = await this.pool.query(query);
     const months: Array<Month> = [];
     for await (const row of rows) {
-      months.push(new Month(row.get('year') as number, row.get('month') as number));
+      months.push(new Month(row['year'] as number, row['month'] as number));
     }
     return months;
   }
@@ -42,8 +42,8 @@ select date, text from diaries
     const result =  await this.pool.query(query, [begin, end]);
     const diaries: Array<Diary> = [];
     for await (const row of result) {
-      const date = dayjs(row.get('date') as Date);
-      const text = row.get('text') as string;
+      const date = dayjs(row['date'] as Date);
+      const text = row['text'] as string;
       diaries.push(new Diary(date.year(), date.month() + 1, date.date(), text));
     }
     return diaries;
@@ -61,8 +61,8 @@ select date, text from diaries
           .subtract(1, `day`)
           .format('YYYY/MM/DD');
         // language=PostgreSQL
-        const counts = await cl.query(`select cast(count(*) as int) as count from diaries where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'));`, [begin, end]);
-        const existedDiaries = counts.rows[0][0] as number;
+        const counts = await cl.query(`select cast(count(*) as int) as count from diaries where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'));`, [begin, end]).one();
+        const existedDiaries = counts['count'] as number;
         // language=PostgreSQL
         const query = `
             insert into diaries (date, text)
