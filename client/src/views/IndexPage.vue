@@ -28,7 +28,7 @@ async function fetchDiaries(year: number, month: number): Promise<protocol.Diari
 }
 
 async function updateDiary(year: number, month: number, day: number, text: string): Promise<protocol.UpdateDiary.Response> {
-  const param  = {
+  const param = {
     method: 'post',
     headers: {
       'Content-Type': 'application/json; charset=utf-8'
