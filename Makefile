@@ -55,7 +55,8 @@ backup:
 
 .PHONY: log
 log:
-	docker-compose logs -f --tail 0
+	UID=$(shell id -u) GID=$(shell id -g) \
+		docker-compose logs -f --tail 0
 
 .PNONY: reload
 reload:
