@@ -50,8 +50,20 @@ select date, text from diaries
   }
 
   async updateDiary(year: number, month: number, day: number, text: string): Promise<boolean> {
-    return await this.pool.use(async (cl) => {
-      await cl.query("begin");
+    text = text.trim();
+    const date = `${('0000' + year).slice(-4)}/${('00' + month).slice(-2)}/${('00' + day).slice(-2)}`;
+    if(text.length === 0) {
+      return await this.pool.use(async (conn) => {
+        // language=PostgreSQL
+        const query = `
+            delete from diaries where date = TO_DATE($1, 'YYYY/MM/DD');
+        `;
+        conn.query(query, [date]);
+        return true;
+      });
+    }
+    return await this.pool.use(async (conn) => {
+      await conn.query("begin");
       try {
         const target = dayjs(new Date(year, month - 1, 1));
         const begin = target
@@ -61,7 +73,7 @@ select date, text from diaries
           .subtract(1, `day`)
           .format('YYYY/MM/DD');
         // language=PostgreSQL
-        const counts = await cl.query(`select cast(count(*) as int) as count from diaries where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'));`, [begin, end]).one();
+        const counts = await conn.query(`select cast(count(*) as int) as count from diaries where (date between TO_DATE($1, 'YYYY/MM/DD') and TO_DATE($2, 'YYYY/MM/DD'));`, [begin, end]).one();
         const existedDiaries = counts['count'] as number;
         // language=PostgreSQL
         const query = `
@@ -69,12 +81,11 @@ select date, text from diaries
             values (TO_DATE($1, 'YYYY/MM/DD'), $2)
             ON CONFLICT (date) DO UPDATE SET text = EXCLUDED.text;
         `;
-        const date = `${('0000' + year).slice(-4)}/${('00' + month).slice(-2)}/${('00' + day).slice(-2)}`;
-        await cl.query(query, [date, text]);
-        await cl.query('COMMIT;');
+        await conn.query(query, [date, text]);
+        await conn.query('COMMIT;');
         return existedDiaries === 0;
       } catch (e) {
-        await cl.query('ROLLBACK;')
+        await conn.query('ROLLBACK;')
         throw e;
       }
     });
