@@ -1,17 +1,22 @@
-FROM node:21-alpine
+FROM node:22 AS builder
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY . .
+COPY protocol/ /app/protocol
+COPY client/ /app/client
+COPY server/ /app/server
 
 RUN npm install -g npm@latest \
   && (cd protocol && npm ci && npm run build) \
   && (cd client && npm ci && npm run build) \
   && (cd server && npm ci && npm run build)
 
+FROM gcr.io/distroless/nodejs22-debian12:latest
+
+COPY --from=builder /app /app
+
 EXPOSE 8888
 
-WORKDIR /usr/src/app/server
-ENTRYPOINT [ "node" ]
-CMD [ "dist/main.js" ]
+WORKDIR /app/server
 
+CMD [ "dist/main.js" ]

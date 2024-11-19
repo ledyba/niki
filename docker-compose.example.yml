@@ -7,6 +7,7 @@ services:
     volumes:
       - './db/flyway_data/sql:/flyway/sql'
       - './db/flyway_data/conf:/flyway/conf'
+      - '/usr/share/zoneinfo/Asia/Tokyo:/etc/localtime'
     networks:
       - 'default'
     profiles: ['tool']
@@ -54,4 +55,3 @@ services:
 networks:
   default:
     external: false
-
