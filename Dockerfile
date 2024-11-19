@@ -13,10 +13,10 @@ RUN npm install -g npm@latest \
 
 FROM gcr.io/distroless/nodejs22-debian12:latest
 
-COPY --from=builder /app /app
+COPY --chown=nonroot:nonroot --from=builder /app /app
 
 EXPOSE 8888
 
 WORKDIR /app/server
-
+USER nonroot
 CMD [ "dist/main.js" ]
