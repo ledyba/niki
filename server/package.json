@@ -4,13 +4,9 @@
   "description": "A simple diary",
   "private": true,
   "exports": {
-    "./protocol": "./dist/protocol.js"
-  },
-  "typesVersions": {
-    "*": {
-      "protocol": [
-        "./dist/protocol.d.ts"
-      ]
+    "./protocol": {
+      "import": "./dist/protocol.js",
+      "types": "./dist/protocol.d.ts"
     }
   },
   "scripts": {
