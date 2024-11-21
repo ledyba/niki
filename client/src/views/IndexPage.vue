@@ -9,7 +9,7 @@
 import MonthList from '@/components/MonthList.vue';
 import DiaryList from '@/components/DiaryList.vue'
 import {DiaryChangeEvent} from '@/components/DiaryEntry.vue';
-import * as protocol from 'protocol'
+import * as protocol from 'server/protocol';
 import { defineComponent } from 'vue';
 import dayjs from 'dayjs';
 

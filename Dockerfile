@@ -2,12 +2,10 @@ FROM node:22 AS builder
 
 WORKDIR /app
 
-COPY protocol/ /app/protocol
 COPY client/ /app/client
 COPY server/ /app/server
 
 RUN npm install -g npm@latest \
-  && (cd protocol && npm ci && npm run build) \
   && (cd client && npm ci && npm run build) \
   && (cd server && npm ci && npm run build)
 

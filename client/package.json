@@ -39,9 +39,9 @@
     "eslint-plugin-vue": "^9.29.0",
     "lint-staged": "^15.2.10",
     "npm-check-updates": "^17.1.4",
-    "protocol": "file:../protocol",
     "sass": "^1.80.1",
     "sass-loader": "^16.0.2",
+    "server": "file:../server",
     "typescript": "^5.6.3"
   },
   "gitHooks": {

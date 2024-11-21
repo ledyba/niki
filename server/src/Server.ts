@@ -1,7 +1,7 @@
 import fastify, {FastifyInstance, FastifyReply, FastifyRequest, RequestGenericInterface} from 'fastify';
 import fastifyStatic from '@fastify/static';
 import dayjs from 'dayjs';
-import * as protocol from 'protocol';
+import * as protocol from './protocol';
 import Repo from "./repo/Repo";
 import Pool from "./repo/Pool";
 import path from 'path';

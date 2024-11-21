@@ -2,7 +2,7 @@
   "name": "niki",
   "version": "1.0.0",
   "description": "A simple diary",
-  "main": "main.js",
+  "private": true,
   "scripts": {
     "serve": "ts-node src/main.ts",
     "build": "tsc",
