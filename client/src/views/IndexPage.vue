@@ -3,7 +3,7 @@
     <MonthList class="month-list" v-bind:months="months"/>
     <DiaryList class="texts" v-bind:diaries="diaries" v-on:diary-change="onDiaryChange($event)" />
   </div>
-</template>
+</template> 
 
 <script lang="ts">
 import MonthList from '@/components/MonthList.vue';
