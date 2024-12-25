@@ -17,8 +17,8 @@ services:
 
   postgres:
     image: 'postgres:13-alpine'
-    container_name: 'niki_db'
-    hostname: 'niki_db'
+    container_name: 'niki_postgres'
+    hostname: 'niki_postgres'
     restart: 'always'
     environment:
       POSTGRES_DB: 'niki'
