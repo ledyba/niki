@@ -7,7 +7,7 @@ services:
     container_name: 'niki_web'
     hostname: 'niki_web'
     environment:
-      DATABASE_HOST: 'niki_postgres'
+      - 'DATABASE_HOST=niki_postgres'
     restart: always
     expose:
       - '8888'
@@ -21,12 +21,12 @@ services:
     hostname: 'niki_postgres'
     restart: 'always'
     environment:
-      POSTGRES_DB: 'niki'
-      POSTGRES_USER: 'niki'
-      POSTGRES_PASSWORD: 'niki'
-      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
-      TZ: 'Asia/Tokyo'
-      PGTZ: 'Asia/Tokyo'
+      - 'POSTGRES_DB=niki'
+      - 'POSTGRES_USER=niki'
+      - 'POSTGRES_PASSWORD=niki'
+      - 'POSTGRES_INITDB_ARGS=--encoding=UTF8'
+      - 'TZ=Asia/Tokyo'
+      - 'PGTZ=Asia/Tokyo'
     expose:
       - '5432'
     volumes:
