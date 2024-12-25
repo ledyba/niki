@@ -7,7 +7,7 @@ services:
     container_name: 'niki_web'
     hostname: 'niki_web'
     environment:
-      DATABASE_HOST: 'niki_db'
+      DATABASE_HOST: 'niki_postgres'
     restart: always
     expose:
       - '8888'
