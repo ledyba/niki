@@ -11,8 +11,7 @@ Please use docker-compose &amp; make.
 ```sh
 git clone https://github.com/ledyba/niki.git
 cd niki
-cp docker-compose.example.yml docker-compose.yml
-# edit docker-compose.yml as you like.
+# edit compose.yml as you like.
 make build
 make up
 ```

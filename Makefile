@@ -1,3 +1,21 @@
+.PHONY: all
+all: dev;
+
+.PHONY: FORCE
+FORCE: ;
+
+########################################################################################################################
+## params
+########################################################################################################################
+# common
+VAR_DIR=./var/
+VARS = $(VAR_DIR) $(VAR_DIR)/psql
+
+# postgres
+PSQL_USER=niki
+PSQL_PASS=niki
+PSQL_NAME=niki
+
 ########################################################################################################################
 ## build
 ########################################################################################################################
@@ -6,66 +24,123 @@
 dev:
 	bash _scripts/dev.sh
 
-########################################################################################################################
-## build
-########################################################################################################################
-
-.PHONY: FORCE
-FORCE: ;
-
-.PHONY: build
-build: FORCE
-	UID=$(shell id -u) GID=$(shell id -g) \
-		docker compose build
-
 .PHONY: upgrade
 upgrade: FORCE
-	cd protocol && npm run up
 	cd server && npm run up
 	cd client && npm run up
 
 ########################################################################################################################
-## DB
+## service
 ########################################################################################################################
 
+.PHONY: all
+all: ps ;
+
 .PHONY: up
-up: var/psql
-	UID=$(shell id -u) GID=$(shell id -g) docker compose up -d
-	$(MAKE) wait
-
-.PHONY: wait
-wait:
-	@UID=$(shell id -u) GID=$(shell id -g) docker compose run \
-		--rm \
-		--use-aliases \
-		db \
-		bash /helpers/wait-boot.sh
-
-.PHONY: migrate
-migrate:
-	bash db/flyway migrate
+up: $(VARS)
+	docker compose up -d
 
 .PHONY: down
 down:
-	UID=$(shell id -u) GID=$(shell id -g) docker compose down
+	docker compose down
 
-.PHONY: backup
-backup:
-	sudo bash _scripts/backup.sh $(shell id -g) $(shell id -u) var
-
-.PHONY: log
-log:
-	UID=$(shell id -u) GID=$(shell id -g) \
-		docker compose logs -f --tail 0
-
-.PNONY: reload
+.PHONY: reload
 reload:
 	$(MAKE) down
 	$(MAKE) up
 
+.PHONY: restart
+restart:
+	docker compose restart
+
+.PHONY: build
+build:
+	docker compose build
+
+.PHONY: pull
+pull:
+	docker compose pull
+
+.PHONY: log
+log:
+	docker compose logs -f --tail 0
+
+.PHONY: log-all
+log-all:
+	docker compose logs --tail all
+
+.PHONY: ps
+ps:
+	docker compose ps
+
+.PHONY: top
+top:
+	docker compose top
+
+########################################################################################################################
+## db
+########################################################################################################################
+# https://www.postgresql.jp/document/7.3/programmer/libpq-connect.html
+
+.PHONY: db-up
+db-up: $(VARS)
+	docker compose up -d postgres
+	@echo -n "Waiting boot... "
+	@docker compose exec postgres "sh" "-c" "while ! pg_isready -U code > /dev/null; do echo -n '.'; sleep 1; done"
+	@echo "[OK]"
+
+.PHONY: db-down
+db-down:
+	docker compose down postgres
+
 .PHONY: db-cli
 db-cli:
-	bash ./db/cli
+	docker compose exec postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
 
-var/psql:
+.PHONY: db-dump
+db-dump:
+	docker compose exec postgres pg_dump "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-read
+db-read: db-up
+	docker compose exec -T postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-vacuum
+db-vacuum:
+	echo "VACUUM ANALYZE;" | docker compose exec -T postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS)"
+
+.PHONY: db-log
+db-log:
+	docker compose logs postgres -f --tail 0
+
+## backup / restore
+
+.PHONY: db-backup
+db-backup:
+	$(MAKE) db-dump > dump.sql
+
+.PHONY: db-restore
+db-restore:
+	$(MAKE) db-read < dump.sql
+
+.PHONY: db-ip
+db-ip:
+	@docker compose exec -T postgres /bin/hostname -i
+
+########################################################################################################################
+## flyway
+########################################################################################################################
+
+.PHONY: migrate
+migrate:
+	docker compose --profile tool \
+	  run --rm \
+    -e 'FLYWAY_CONFIG_FILES=/flyway/conf/flyway.conf' \
+    flyway "migrate"
+
+########################################################################################################################
+## vars
+########################################################################################################################
+
+$(VARS):
 	mkdir -p "$@"

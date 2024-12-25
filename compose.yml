@@ -1,17 +1,5 @@
 ---
 services:
-  flyway:
-    image: 'flyway/flyway:7.3.1'
-    container_name: 'niki_flyway'
-    restart: 'no'
-    volumes:
-      - './db/flyway_data/sql:/flyway/sql'
-      - './db/flyway_data/conf:/flyway/conf'
-      - '/usr/share/zoneinfo/Asia/Tokyo:/etc/localtime'
-    networks:
-      - 'niki-link'
-    profiles: ['tool']
-
   web:
     image: 'niki_web'
     build:
@@ -27,11 +15,10 @@ services:
       - 'niki-link'
       - 'planet-link'
 
-  db:
+  postgres:
     image: 'postgres:13-alpine'
     container_name: 'niki_db'
     hostname: 'niki_db'
-    user: "${UID}:${GID}"
     restart: 'always'
     environment:
       POSTGRES_DB: 'niki'
@@ -44,12 +31,23 @@ services:
       - '5432'
     volumes:
       - './var/psql:/var/lib/postgresql/data:z'
-      - './db/helpers:/helpers'
       - '/etc/passwd:/etc/passwd:ro'
     networks:
       - 'niki-link'
     tty: true
     stdin_open: true
+
+  flyway:
+    image: 'flyway/flyway:7.3.1'
+    container_name: 'niki_flyway'
+    restart: 'no'
+    volumes:
+      - './db/flyway_data/sql:/flyway/sql'
+      - './db/flyway_data/conf:/flyway/conf'
+      - '/usr/share/zoneinfo/Asia/Tokyo:/etc/localtime'
+    networks:
+      - 'niki-link'
+    profiles: ['tool']
 
 networks:
   niki-link:
