@@ -18,7 +18,7 @@
 <script lang="ts">
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
 import { defineComponent } from 'vue';
-import * as protocol from 'protocol';
+import * as protocol from 'server/protocol';
 import DiaryEditor, {EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import dayjs from 'dayjs';
 

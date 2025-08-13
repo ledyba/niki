@@ -12,7 +12,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import DiaryEntry, {DiaryChangeEvent} from '@/components/DiaryEntry.vue'
-import * as protocol from 'protocol';
+import * as protocol from 'server/protocol';
 
 const DiaryList = defineComponent({
   components: {
@@ -24,7 +24,7 @@ const DiaryList = defineComponent({
   },
   props: {
     diaries: {
-      type: Array,
+      type: Array<protocol.Entity.Diary>,
       required: false,
       default: () => { return ([] as Array<protocol.Entity.Diary>); },
     },

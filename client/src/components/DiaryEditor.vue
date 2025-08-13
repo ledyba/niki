@@ -8,7 +8,7 @@
 <script lang="ts">
 // https://github.com/surmon-china/vue-quill-editor
 import { defineComponent } from 'vue';
-import Quill, {QuillOptionsStatic} from 'quill';
+import Quill, {QuillOptions} from 'quill';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
@@ -19,7 +19,7 @@ export interface EditorChangeEvent {
   text: string;
 }
 
-const defaultOptions: QuillOptionsStatic = {
+const defaultOptions: QuillOptions = {
   theme: 'snow',
   bounds: document.body,
   modules: {
@@ -48,10 +48,9 @@ const DiaryEditor = defineComponent({
   name: 'quill-editor',
   data: function() {
     return {
-      options_: {} as QuillOptionsStatic,
+      options_: {} as QuillOptions,
       content_: '',
       quill: null as (Quill | null),
-      defaultOptions
     };
   },
   props: {
@@ -59,16 +58,6 @@ const DiaryEditor = defineComponent({
     disabled: {
       type: Boolean,
       default: false
-    },
-    options: {
-      type: Object,
-      required: false,
-      default: () => ({})
-    },
-    globalOptions: {
-      type: Object,
-      required: false,
-      default: () => ({})
     },
     focused: {
       type: Boolean,
@@ -96,10 +85,8 @@ const DiaryEditor = defineComponent({
           //this.quill.clipboard.dangerouslyPasteHTML(this.content);
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
-        // Options
-        this.options_ = Object.assign({}, this.defaultOptions, this.globalOptions, this.options)
         // Instance
-        this.quill = new Quill(this.$refs.editor as HTMLElement, this.options_);
+        this.quill = new Quill(this.$refs.editor as HTMLElement, defaultOptions);
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
@@ -116,7 +103,7 @@ const DiaryEditor = defineComponent({
             return;
           }
           let html = (this.$refs.editor as HTMLElement).children[0].innerHTML;
-          const quill = this.quill;
+          const quill = this.quill as Quill;
           const text = this.quill.getText();
           if (html === '<p><br></p>') html = '';
           this.content_ = html;

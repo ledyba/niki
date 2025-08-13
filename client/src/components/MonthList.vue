@@ -19,7 +19,7 @@ const MonthList = defineComponent({
     };
   },
   props: {
-    months: Array,
+    months: Array<string>,
   },
   methods: {
   }
