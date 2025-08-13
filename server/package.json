@@ -18,8 +18,8 @@
   "author": "Kaede Fujisaki",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@types/generic-pool": "^3.8.3",
-    "@types/node": "^24",
+    "@types/generic-pool": "^3.1.11",
+    "@types/node": "^20",
     "npm-check-updates": "^18.0.2",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
