@@ -6,8 +6,8 @@ COPY client/ /app/client
 COPY server/ /app/server
 
 RUN npm install -g npm@latest \
-  && (cd client && npm ci && npm run build) \
-  && (cd server && npm ci && npm run build)
+  && (cd server && npm ci && npm run build) \
+  && (cd client && npm ci && npm run build)
 
 FROM gcr.io/distroless/nodejs24-debian12:latest
 
