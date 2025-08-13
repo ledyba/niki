@@ -1,9 +1,9 @@
 import fastify, {FastifyInstance, FastifyReply, FastifyRequest, RequestGenericInterface} from 'fastify';
 import fastifyStatic from '@fastify/static';
 import dayjs from 'dayjs';
-import * as protocol from './protocol';
-import Repo from "./repo/Repo";
-import Pool from "./repo/Pool";
+import * as protocol from './protocol.js';
+import Repo from "./repo/Repo.js";
+import Pool from "./repo/Pool.js";
 import path from 'path';
 
 const DATABASE_HOST = process.env['DATABASE_HOST'] || 'localhost';

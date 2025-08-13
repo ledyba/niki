@@ -1,5 +1,5 @@
 import * as genericPool from 'generic-pool';
-import {Client, ResultIterator, ResultRecord, connect} from "ts-postgres";
+import {Client, ResultIterator, ResultRecord, connect} from 'ts-postgres';
 
 export default class Pool {
   private pool: genericPool.Pool<Client>

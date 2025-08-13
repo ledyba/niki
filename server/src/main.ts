@@ -1,4 +1,4 @@
-import Server from './Server';
+import Server from './Server.js';
 
 async function main() {
   const server = new Server(3000);
