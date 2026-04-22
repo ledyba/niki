@@ -1,0 +1,1 @@
+- [わかった気になれる CRDT を使った共同編集 - Speaker Deck](https://speakerdeck.com/kentomoriwaki/wakatutaqi-ninareru-crdt-woshi-tutagong-tong-bian-ji?slide=20)

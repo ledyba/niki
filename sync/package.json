@@ -1,0 +1,21 @@
+{
+  "name": "sync",
+  "version": "1.0.0",
+  "description": "A simple diary :: sync data struct",
+  "private": true,
+  "exports": {},
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "watch": "jest --watch",
+    "up": "(rm package-lock.json || del package-lock.json) && npm-check-updates --upgrade && npm install"
+  },
+  "author": "Kaede Fujisaki",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.3"
+  }
+}
