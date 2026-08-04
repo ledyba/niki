@@ -72,9 +72,14 @@ const IndexPage = defineComponent({
       months: Array<string>(),
       diaries: Array<protocol.Entity.Diary>(),
       updateTicket: null as number | null,
-      // 保存ごとに単調増加させる世代カウンタ。fetch解決時に最新世代か判定する。
+      // 保存を直列化する: 常に高々1本だけ in-flight にする。
+      saving: false,
+      // in-flight 中に入った編集を1個だけ保持するキュー(最新で上書き)。
+      pending: null as DiaryChangeEvent | null,
+      // 月切替などで文脈を破棄する世代カウンタ。in-flight の解決時に
+      // まだ同じ文脈(=同じ月)かを判定し、古い解決を無視するために使う。
       saveSeq: 0,
-      // 最後の保存成功以降に編集があったか。
+      // 最後の保存成功以降に編集があったか(離脱ガード用)。
       dirty: false,
       saveStatus: { kind: 'idle', message: '' } as SaveStatus,
       saveHandler_: this.saveHandler.bind(this),
@@ -154,18 +159,27 @@ const IndexPage = defineComponent({
     },
     resetSaveState: function () {
       // 月の切り替えなどで保存文脈を破棄する。in-flightな保存が
-      // 新しい月の状態を書き換えないよう seq も進める。
+      // 新しい月の状態を書き換えないよう seq を進め、キューも捨てる。
       if (this.updateTicket !== null) {
         clearTimeout(this.updateTicket);
         this.updateTicket = null;
       }
       this.saveSeq += 1;
+      this.saving = false;
+      this.pending = null;
       this.dirty = false;
       this.saveStatus = { kind: 'idle', message: '' };
     },
     onDiaryChange: function (event: DiaryChangeEvent) {
-      // 編集が入った → dirty。デバウンス待機中/dirty のあいだは idle(空欄)。
+      // 編集が入った → dirty。最新テキストをキュー(長さ1)に上書き保持。
       this.dirty = true;
+      this.pending = event;
+      if (this.saving) {
+        // in-flight 中: スピナー(保存中)は途切れさせず維持し、
+        // 新しいデバウンスも張らない。完了時に pending を処理する。
+        return;
+      }
+      // in-flight でない通常の編集: idle(空欄) 表示 + 200ms デバウンス。
       this.saveStatus = { kind: 'idle', message: '' };
       if(this.updateTicket !== null) {
         clearTimeout(this.updateTicket);
@@ -173,36 +187,54 @@ const IndexPage = defineComponent({
       }
       this.updateTicket = setTimeout(()=> {
         this.updateTicket = null;
-        // この保存の世代を確定。以降 dirty=false（この時点の内容を保存中）。
-        const seq = this.saveSeq + 1;
-        this.saveSeq = seq;
-        this.dirty = false;
-        this.saveStatus = { kind: 'saving', message: '' };
-        updateDiary(event.year, event.month, event.day, event.text)
-            .then((resp) => {
-              if(seq !== this.saveSeq) {
-                // 自分より新しい保存が始まっている/文脈が破棄された → 無視。
-                return;
-              }
-              if(resp.months) {
-                this.months = resp.months;
-              }
-              if(this.dirty) {
-                // 保存中にさらに編集された → ☑は出さず idle に戻す
-                // （後続のデバウンス保存が改めて走る）。
-                this.saveStatus = { kind: 'idle', message: '' };
-              } else {
-                this.saveStatus = { kind: 'saved', message: '' };
-              }
-            })
-            .catch((err) => {
-              if(seq !== this.saveSeq) {
-                return;
-              }
-              const message = err instanceof Error ? err.message : String(err);
-              this.saveStatus = { kind: 'error', message: message };
-            });
+        this.flushSave();
       }, 200);
+    },
+    // キューに保存待ちがあれば、直列に(高々1本ずつ)保存を実行する。
+    // 成功して pending が残っていればデバウンスを待たず即座に次を投げ、
+    // スピナーを継続させる。エラー時はループを止めて error 表示にする。
+    flushSave: function () {
+      if (this.pending === null) {
+        return;
+      }
+      const job = this.pending;
+      this.pending = null;
+      // 現在の文脈(月)を記録。解決時に月が切り替わっていたら無視する。
+      const seq = this.saveSeq;
+      this.saving = true;
+      this.saveStatus = { kind: 'saving', message: '' };
+      updateDiary(job.year, job.month, job.day, job.text)
+          .then((resp) => {
+            if(seq !== this.saveSeq) {
+              // 文脈が破棄された(月切替) → saving 等は触らず無視。
+              return;
+            }
+            if(resp.months) {
+              this.months = resp.months;
+            }
+            if(this.pending !== null) {
+              // 保存中に編集が入っていた → デバウンスを待たず即次を保存。
+              // saving は継続し、スピナーを途切れさせない。
+              this.flushSave();
+            } else {
+              this.saving = false;
+              this.dirty = false;
+              this.saveStatus = { kind: 'saved', message: '' };
+            }
+          })
+          .catch((err) => {
+            if(seq !== this.saveSeq) {
+              return;
+            }
+            this.saving = false;
+            // 失敗した編集は破棄せず「未保存」として残す。自動リトライは
+            // せず(無限ループ回避)、次のユーザー編集で通常経路から再送する。
+            if(this.pending === null) {
+              this.pending = job;
+            }
+            const message = err instanceof Error ? err.message : String(err);
+            this.saveStatus = { kind: 'error', message: message };
+          });
     }
   }
 })
