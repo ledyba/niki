@@ -31,7 +31,6 @@
     "dayjs": "^1.11.13",
     "fastify": "^5.5.0",
     "generic-pool": "^3.9.0",
-    "protocol": "file:../protocol",
     "ts-postgres": "^2.0.4"
   }
 }
