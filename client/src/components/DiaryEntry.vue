@@ -1,13 +1,15 @@
 <template>
   <div class="diary">
     <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
-    <DiaryEditor
-        ref="quillEditor"
-        v-if="isToday"
-        v-bind:content="diary.text"
-        v-bind:focused="isToday"
-        v-on:change="onEditorChange($event)"
-    />
+    <template v-if="isToday">
+      <DiaryEditor
+          ref="quillEditor"
+          v-bind:content="diary.text"
+          v-bind:focused="isToday"
+          v-on:change="onEditorChange($event)"
+      />
+      <SaveStatusIndicator v-bind:status="saveStatus" />
+    </template>
     <div v-else
         v-html="diary.text"
         v-bind:focused="isToday"
@@ -17,21 +19,28 @@
 
 <script lang="ts">
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import * as protocol from 'server/protocol';
 import DiaryEditor, {EditorChangeEvent} from '@/components/DiaryEditor.vue'
+import SaveStatusIndicator, {SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import dayjs from 'dayjs';
 
 // eslint-disable-next-line
 const DiaryEntry = defineComponent({
   components: {
     DiaryEditor,
+    SaveStatusIndicator,
   },
   props: {
     diary: {
       type: Object,
       required: false,
       default: () => ({} as protocol.Entity.Diary)
+    },
+    saveStatus: {
+      type: Object as PropType<SaveStatus>,
+      required: false,
+      default: (): SaveStatus => ({ kind: 'idle', message: '' }),
     },
   },
   data: function () {

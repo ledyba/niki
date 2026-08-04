@@ -3,6 +3,7 @@
     <div class="diary" v-for="diary in diaries" :key="diary.year + '/' + diary.month + '/' + diary.day">
       <DiaryEntry
         v-bind:diary="diary"
+        v-bind:save-status="saveStatus"
         v-on:change="onDiaryChange($event)">
       </DiaryEntry>
     </div>
@@ -10,8 +11,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import DiaryEntry, {DiaryChangeEvent} from '@/components/DiaryEntry.vue'
+import {SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import * as protocol from 'server/protocol';
 
 const DiaryList = defineComponent({
@@ -27,6 +29,11 @@ const DiaryList = defineComponent({
       type: Array<protocol.Entity.Diary>,
       required: false,
       default: () => { return ([] as Array<protocol.Entity.Diary>); },
+    },
+    saveStatus: {
+      type: Object as PropType<SaveStatus>,
+      required: false,
+      default: (): SaveStatus => ({ kind: 'idle', message: '' }),
     },
   },
   methods: {
