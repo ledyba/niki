@@ -125,9 +125,19 @@ docker rm -f niki_dev_pg
 ## Run (human path)
 
 ブラウザで見たいだけなら、上の 1〜2 を実行して `http://127.0.0.1:3000/` を開く。
-停止は `pkill -f 'node dist/main.js'`。
+停止は起動したシェルで Ctrl-C。
 
-`make dev` / `_scripts/dev.sh` は**動かない**（下記 Gotchas 参照）。
+コードをいじりながら見るなら `make dev`（= `_scripts/dev.sh`）のほうが早い。server を一度
+ビルドしてから watcher を3本（`tsc --watch` / `vue-cli-service build --watch` /
+`ts-node-dev`）立ち上げる。ただし **postgres は面倒を見ない**ので、先に上の 1 の
+使い捨てコンテナを立ててから実行すること。DB が無いと API リクエストは
+エラーにならず**ハングする**。
+
+```bash
+make dev        # Ctrl-C で全部止まる
+```
+
+エージェントが `make dev` を使うときは `setsid` で包むこと（下記 Gotchas 参照）。
 
 ## Test
 
@@ -162,9 +172,20 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
   が ESLint 8 で削除済みの API（`extensions`, `useEslintrc` 等）を渡すため、対象ファイルに
   到達する前に `new ESLint()` で落ちる。無改変の magistra でも同じなので、自分の変更を
   疑わなくてよい。`vue.config.js` の `lintOnSave: false` も同じ理由。
-- **`make dev` / `_scripts/dev.sh` は動かない。** スクリプトが `cd protocol` するが、
-  `protocol` パッケージは削除済み（共有型は `server/src/protocol.ts` に移った）。
-  `_scripts/dev.sh: line 7: cd: protocol: No such file or directory` で落ちる。
+- **client のビルドには先に server のビルドが要る。** client は共有型を
+  `import * as protocol from 'server/protocol'` で参照し、これは server の
+  `package.json` の `exports` 経由で `server/dist/protocol.d.ts` に解決される。
+  `server/dist` が無いと client は `TS2307: Cannot find module 'server/protocol'` で落ちる。
+  上の Build の順序（server → client）はこのため。Dockerfile も dev.sh も同じ順序。
+- **`protocol.ts` の変更は client の型検査に即時反映されない。** fork-ts-checker が
+  `node_modules` 配下を監視しないので、`make dev` 中に `server/src/protocol.ts` を
+  編集しても client 側は古い `.d.ts` を見たまま（`TS2694: Namespace ... has no exported
+  member` になる）。client の watcher ごと再起動する。
+- **`make dev` を非対話で起動するなら `setsid` で包む。** 終了時の trap が `kill 0` で
+  プロセスグループ全体を落とすが、非対話シェルから起動すると呼び出し元と同じ
+  プロセスグループになるため、**呼び出し元のシェルごと道連れになる**。
+  対話シェルからならジョブ制御で独自のグループになるので問題ない。
+  停止は `kill -TERM -<pgid>`。
 - **クライアントの変更はビルドしないと反映されない。** サーバは `client/dist` を
   配信しているだけなので、`npm run build` を忘れると古い画面を見ることになる。
 
