@@ -81,12 +81,16 @@ curl -s -o /dev/null -w "GET / -> %{http_code}\n" http://127.0.0.1:3000/
 
 ```bash
 docker run --rm --network host -v "$PWD":/work -w /work \
+  --user "$(id -u):$(id -g)" \
   -e NODE_PATH=/work/var/driver/node_modules \
   mcr.microsoft.com/playwright:v1.62.1-noble \
   node .claude/skills/run-niki/driver.mjs all
 ```
 
 末尾に `===== 15/15 PASS =====` が出れば全部通っている。失敗すると exit 1。
+
+`--user` を省くとスクリーンショットが root 所有でホストに残り、あとで消せなくなる
+（下記 Gotchas 参照）。
 
 | 引数 | 何を確かめるか |
 |---|---|
@@ -165,6 +169,13 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
 - **Playwright 公式イメージにブラウザはあるが `playwright` パッケージは無い。**
   `/ms-playwright` に chromium 等は入っているのに `npm root -g` には playwright が
   無いので、`NODE_PATH=/work/var/driver/node_modules` で host 側に入れたものを渡している。
+- **`docker run` に `--user` を付けないとゴミが消せなくなる。** コンテナは既定で root
+  なので、`-v "$PWD":/work` 越しに書かれる `var/shots/*.png` がホスト側に **root 所有**で
+  残る。sudo が使えないと `rm -rf` も `git worktree remove` も
+  `Permission denied` で失敗する（実際に踏んだ）。`--user "$(id -u):$(id -g)"` で回避する。
+  Playwright 公式イメージは非 root でも問題なく動く（`HOME` の指定も不要）。
+  もう作ってしまった場合はコンテナ経由で消す:
+  `docker run --rm -v "$PWD/var":/v alpine rm -rf /v/shots`
 - **ESM の bare import は `NODE_PATH` を見ない。** そのため `driver.mjs` は
   `import ... from 'playwright'` ではなく `createRequire(import.meta.url)('playwright')`
   で読んでいる。ここを普通の import に「直す」と `ERR_MODULE_NOT_FOUND` で落ちる。
@@ -195,6 +206,9 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
   1500 パッケージ以上入れる。`df -h /opt` で空きを確認する。ディスクが埋まっていると
   途中まで展開された `node_modules` が残るので、`rm -rf client/node_modules` してから
   やり直す。
+- **`var/shots` が消せない / `git worktree remove` が `Permission denied`**: `--user` 無しで
+  ドライバを回して root 所有のファイルが残っている。`find . ! -user "$(id -un)"` で確認し、
+  `docker run --rm -v "$PWD/var":/v alpine rm -rf /v/shots` で消す。
 - **`Cannot find package 'playwright'` / `Cannot find module 'playwright'`**:
   Setup の `npm i --no-save --prefix var/driver` を飛ばしたか、`docker run` に
   `-e NODE_PATH=/work/var/driver/node_modules` を渡し忘れている。
