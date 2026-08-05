@@ -10,6 +10,13 @@ export default defineConfigWithVueTs(
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx,vue}'],
     languageOptions: {
+      globals: globals.browser,
+    },
+  },
+  {
+    // vite.config.ts と eslint 自身の設定は Node で動く。
+    files: ['vite.config.ts', 'eslint.config.mjs'],
+    languageOptions: {
       globals: globals.node,
     },
   },
@@ -20,12 +27,6 @@ export default defineConfigWithVueTs(
     rules: {
       'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
       'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-    },
-  },
-  {
-    files: ['**/__tests__/**/*.{js,ts}', 'tests/unit/**/*.spec.{js,ts}'],
-    languageOptions: {
-      globals: globals.mocha,
     },
   },
 )

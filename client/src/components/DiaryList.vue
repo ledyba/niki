@@ -11,10 +11,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
-import DiaryEntry, {DiaryChangeEvent} from '@/components/DiaryEntry.vue'
-import {SaveStatus} from '@/components/SaveStatusIndicator.vue'
-import * as protocol from 'server/protocol';
+import { defineComponent, type PropType } from 'vue';
+import DiaryEntry, {type DiaryChangeEvent} from '@/components/DiaryEntry.vue'
+import type {SaveStatus} from '@/components/SaveStatusIndicator.vue'
+import type * as protocol from 'server/protocol';
 
 const DiaryList = defineComponent({
   components: {
@@ -44,7 +44,7 @@ const DiaryList = defineComponent({
 });
 
 export default DiaryList;
-export { DiaryChangeEvent };
+export type { DiaryChangeEvent };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

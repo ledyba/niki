@@ -19,10 +19,10 @@
 
 <script lang="ts">
 // https://qiita.com/simezi9/items/c27d69f17d2d08722b3a
-import { defineComponent, PropType } from 'vue';
-import * as protocol from 'server/protocol';
-import DiaryEditor, {EditorChangeEvent} from '@/components/DiaryEditor.vue'
-import SaveStatusIndicator, {SaveStatus} from '@/components/SaveStatusIndicator.vue'
+import { defineComponent, type PropType } from 'vue';
+import type * as protocol from 'server/protocol';
+import DiaryEditor, {type EditorChangeEvent} from '@/components/DiaryEditor.vue'
+import SaveStatusIndicator, {type SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import dayjs from 'dayjs';
 
 const DiaryEntry = defineComponent({
@@ -71,7 +71,7 @@ interface DiaryChangeEvent {
   day: number,
   text: string,
 }
-export { DiaryChangeEvent };
+export type { DiaryChangeEvent };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

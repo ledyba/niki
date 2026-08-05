@@ -17,9 +17,9 @@ echo "building shared types..."
 # 吐かない。これで (a) protocol.ts を編集しても dist/protocol.d.ts が正しいままになり、
 # (b) ts-node-dev が読み込んだファイルだけでなくプロジェクト全体が型検査され続ける。
 #
-# ただし client 側への即時反映はしない: fork-ts-checker は node_modules 配下を監視
-# しないので、protocol.ts の変更を client の型検査に反映するには client の watch
-# (実質このスクリプト) を再起動する必要がある。旧 protocol パッケージ時代も同じ。
+# ただし client 側の型検査は走らない: 下の client の watch は vite build --watch で、
+# vite (esbuild) は型を落とすだけで検査しない。client の型が知りたいときは
+# `cd client && npm run typecheck` (vue-tsc) を別途叩くこと。
 (cd server && npm run watch:types) &
 TYP="$!"
 (cd client && npm run watch) &
