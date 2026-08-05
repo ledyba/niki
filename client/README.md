@@ -1,8 +1,8 @@
 # client
 
-Vite + Vue 3 の SPA。共有の型定義を `server/protocol` から import しているので、
-**先に `server` をビルドして `server/dist/protocol.d.ts` を用意しておくこと**
-(無いと型検査が TS2307 で落ちる)。
+A Vite + Vue 3 SPA. It imports the shared type definitions from `server/protocol`,
+so **build `server` first** to emit `server/dist/protocol.d.ts` — without it the
+typecheck fails with `TS2307`.
 
 ## Project setup
 ```
@@ -13,14 +13,14 @@ npm install
 ```
 npm run serve
 ```
-`/diaries` へのリクエストは `http://localhost:3000` (server) にプロキシされる。
-リポジトリ全体の開発は `make dev` (`_scripts/dev.sh`) を使う。
+Requests to `/diaries` are proxied to `http://localhost:3000` (the server).
+To work on the whole repository at once, use `make dev` (`_scripts/dev.sh`).
 
 ### Compiles and minifies for production
 ```
 npm run build
 ```
-`vue-tsc --noEmit` で型検査してから `vite build` で `dist/` に出力する。
+Typechecks with `vue-tsc --noEmit`, then emits to `dist/` with `vite build`.
 
 ### Type check only
 ```
