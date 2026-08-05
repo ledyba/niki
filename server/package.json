@@ -13,6 +13,7 @@
     "serve": "ts-node src/main.ts",
     "build": "tsc",
     "watch": "ts-node-dev src/main.ts",
+    "watch:types": "tsc --watch --preserveWatchOutput",
     "up": "(rm package-lock.json || del package-lock.json) && npm-check-updates --upgrade && npm install"
   },
   "author": "Kaede Fujisaki",
