@@ -8,9 +8,9 @@
 <script lang="ts">
 import MonthList from '@/components/MonthList.vue';
 import DiaryList from '@/components/DiaryList.vue'
-import {DiaryChangeEvent} from '@/components/DiaryEntry.vue';
-import {SaveStatus} from '@/components/SaveStatusIndicator.vue';
-import * as protocol from 'server/protocol';
+import type {DiaryChangeEvent} from '@/components/DiaryEntry.vue';
+import type {SaveStatus} from '@/components/SaveStatusIndicator.vue';
+import type * as protocol from 'server/protocol';
 import { defineComponent } from 'vue';
 import dayjs from 'dayjs';
 

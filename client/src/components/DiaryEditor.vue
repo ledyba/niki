@@ -8,7 +8,7 @@
 <script lang="ts">
 // https://github.com/surmon-china/vue-quill-editor
 import { defineComponent } from 'vue';
-import Quill, {QuillOptions} from 'quill';
+import Quill, {type QuillOptions} from 'quill';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
