@@ -25,7 +25,6 @@ import DiaryEditor, {EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import SaveStatusIndicator, {SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import dayjs from 'dayjs';
 
-// eslint-disable-next-line
 const DiaryEntry = defineComponent({
   components: {
     DiaryEditor,

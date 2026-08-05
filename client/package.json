@@ -6,7 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
-    "lint": "vue-cli-service lint",
+    "lint": "eslint .",
     "up": "(rm package-lock.json || del package-lock.json) && npm-check-updates --upgrade && npm install",
     "vue-up": "vue upgrade --next --all",
     "watch": "vue-cli-service build --watch"
@@ -20,13 +20,11 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
     "@types/quill": "^2.0.14",
-    "@typescript-eslint/eslint-plugin": "^8.39.1",
-    "@typescript-eslint/parser": "^8.39.1",
     "@vue/cli": "~5.0.8",
-    "@vue/cli-plugin-eslint": "~5.0.8",
     "@vue/cli-plugin-router": "~5.0.8",
     "@vue/cli-plugin-typescript": "~5.0.8",
     "@vue/cli-plugin-unit-mocha": "~5.0.8",
@@ -37,6 +35,7 @@
     "chai": "^5.2.1",
     "eslint": "^9.33.0",
     "eslint-plugin-vue": "^10.4.0",
+    "globals": "^17.9.0",
     "lint-staged": "^16.1.5",
     "npm-check-updates": "^18.0.2",
     "sass": "^1.90.0",
@@ -49,7 +48,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
-      "vue-cli-service lint",
+      "eslint --fix",
       "git add"
     ]
   }

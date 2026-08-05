@@ -98,7 +98,7 @@ const DiaryEditor = defineComponent({
           }
         });
         // Update model if text changes
-        this.quill.on('text-change', (delta, oldDelta, source) => {
+        this.quill.on('text-change', () => {
           if(this.quill === null) {
             return;
           }
