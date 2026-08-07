@@ -47,17 +47,19 @@ export function buildMonths(existing: Array<string>): Array<string> {
 }
 
 /**
- * その月の全ての日を並べる(新しい順)。今月は今日までで打ち切る。
+ * その月の日のうち「今日より後でない」ものを全て並べる(新しい順)。
+ * 過去の月は全日、今月は今日まで、未来の月は0日、が1つの規則で決まる。
  * 日記のない日は空文字の Diary として埋める。
  */
 export function buildDiaries(year: number, month: number, fetched: Array<protocol.Entity.Diary>): Array<protocol.Entity.Diary> {
   const now = dayjs();
   const daysInMonth = dayjs(new Date(year, month - 1, 1)).daysInMonth();
-  const isCurrentMonth = now.year() === year && (now.month() + 1) === month;
-  const last = isCurrentMonth ? Math.min(now.date(), daysInMonth) : daysInMonth;
   const byDay = new Map<number, protocol.Entity.Diary>();
   const days = new Set<number>();
-  for (let day = 1; day <= last; ++day) {
+  for (let day = 1; day <= daysInMonth; ++day) {
+    if (dayjs(new Date(year, month - 1, day)).isAfter(now, 'day')) {
+      break;
+    }
     days.add(day);
   }
   // 打ち切りの外(未来の日など)に日記があっても消さない。

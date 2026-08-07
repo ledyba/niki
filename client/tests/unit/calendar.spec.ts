@@ -90,6 +90,17 @@ describe('buildDiaries', () => {
     expect(diaries.map((d) => d.day)).toEqual([8, 7, 6, 5, 4, 3, 2, 1])
   })
 
+  it('未来の月は1日も出さない(URL直打ちで来た場合)', () => {
+    expect(buildDiaries(2027, 3, [])).toEqual([])
+  })
+
+  it('未来の月でも日記があればその日だけ出す', () => {
+    const diaries = buildDiaries(2027, 3, [
+      { year: 2027, month: 3, day: 10, text: '<p>未来?</p>' },
+    ])
+    expect(diaries.map((d) => d.day)).toEqual([10])
+  })
+
   it('既存の日記の text が正しくマージされる', () => {
     const diaries = buildDiaries(2026, 7, [
       { year: 2026, month: 7, day: 1, text: '<p>1日</p>' },
