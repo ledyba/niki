@@ -2,7 +2,7 @@
   <div class="month">
     <ul>
       <router-link v-for="month in months" :key="month" v-bind:to="'/' + month">
-      <li>
+      <li v-bind:class="{ 'month__item--active': isActive(month) }">
         {{ month }}
       </li>
       </router-link>
@@ -22,6 +22,10 @@ const MonthList = defineComponent({
     months: Array<string>,
   },
   methods: {
+    // いま見ている月かどうか。
+    isActive: function (month: string): boolean {
+      return this.$route.path === '/' + month;
+    },
   }
 });
 
@@ -54,5 +58,9 @@ li {
 a {
   color: black;
   text-decoration: none;
+}
+.month__item--active {
+  background: #2c3e50;
+  color: white;
 }
 </style>

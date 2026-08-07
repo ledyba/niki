@@ -130,10 +130,16 @@ const DiaryEditor = defineComponent({
     // Watch content change
     content: function (newVal, oldVal) {
       if (this.quill) {
-        if (newVal && newVal !== oldVal && newVal !== this.content_) {
+        // 自分の text-change 由来で親が書き戻した内容は無視する。
+        // ここを素通しすると、本文を全消しした時に setText('') が跳ね返る。
+        if (newVal === this.content_) {
+          return;
+        }
+        if (newVal && newVal !== oldVal) {
           this.content_ = newVal
           this.quill.clipboard.dangerouslyPasteHTML(newVal);
         } else if (!newVal) {
+          this.content_ = ''
           this.quill.setText('')
         }
       }

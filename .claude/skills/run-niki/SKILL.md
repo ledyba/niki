@@ -102,7 +102,8 @@ docker run --rm --network host -v "$PWD":/work -w /work \
 
 スクリーンショット → `var/shots/*.png`。サーバログ → `/tmp/niki-server.log`。
 
-`month` シナリオには**今月以外の月**が必要。無ければ入れてから実行する。
+`month` シナリオには**今月以外の月**が必要。左のリストは「最古の日記の月から今月まで」
+なので、日記が1つも無い（または今月しか無い）と今月しか並ばない。無ければ入れてから実行する。
 
 ```bash
 docker exec -i niki_dev_pg psql -U niki -d niki \
@@ -145,14 +146,18 @@ make dev        # Ctrl-C で全部止まる
 
 ## Test
 
-ユニットテストは**壊れているので当てにしない**。
+Vite 移行後は `client` のユニットテストも通る（vitest）。ただし `server/protocol` を
+型で参照するテストコード（`calendar.ts` 経由）があるので、**先に server を
+ビルドしておく**こと（Build の順序と同じ理由）。
 
 ```bash
-cd client && npm run test:unit    # → exit 1: Module not found: '@/components/HelloWorld.vue'
+cd server && npm run build && cd ..   # 先に。無いと client の型解決が壊れる
+cd client && npm run test:unit        # vitest run
 ```
 
-scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を参照したまま残っている。
-**このアプリの実質的なテストは上記のドライバ**で、そちらは 15/15 通る。
+純粋関数(`calendar.ts` の月・日組み立て)はここでカバーする。それ以外の
+挙動（保存キュー・DOM・実際の API 往復）は**上記のドライバ**が受け持ち、
+そちらは 15/15 通る。両方揃って初めてアプリ全体をカバーしている。
 
 ## Gotchas
 
@@ -163,9 +168,20 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
 - **ポートは 3000。** `main.ts` が `new Server(3000)` とハードコードしている。
   Dockerfile の `EXPOSE 8888`、`compose.yml` の `expose: 8888`、README の `:8888` は
   すべて古い記述で実体と合っていない。
-- **保存インジケーターは「今日」の欄にしか出ない。** `DiaryEntry.vue` が `isToday` の
-  ときだけ Quill と `.save-status` を描画し、それ以外の日は読み取り専用の HTML。
-  ドライバが `.ql-editor` を待つのはそのため。
+- **どの日も編集できる／編集モードは日ごとのトグル。** `DiaryEntry.vue` は
+  `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
+  Quill と `.ql-editor` が描画され、それ以外は読み取り専用の HTML。一度に開ける
+  エディタは高々1つ(`IndexPage` の `editingDate`)で、今日は初期状態で開いている。
+  ドライバはページ読み込み直後・リロード後・月移動後にそれぞれ `openEditor()` で
+  対象日のトグルを押してから `.ql-editor` を待つ。
+- **`.save-status` は日ごとに出るので同時に複数存在しうる。** `IndexPage` は
+  `statuses`(日付キーの `Map`)を持ち、`DiaryEntry` は自分の日のエントリがあれば
+  それを、無ければ編集中のときだけ `idle` を出す(`DiaryList` の `statuses` prop
+  経由)。つまり「保存待ち/保存中/保存失敗/保存済みの日」+「編集中の日」の分だけ
+  `.save-status` が同時に並びうる。ドライバの `document.querySelector('.save-status')`
+  は DOM 順で最初の1つ(日付降順の先頭)を拾っているだけで、今日しか編集しない
+  既存シナリオではそれで足りている。特定の日を狙うときは
+  `.diary[data-date="YYYY/MM/DD"] .save-status` のように絞ること。
 - **Playwright 公式イメージにブラウザはあるが `playwright` パッケージは無い。**
   `/ms-playwright` に chromium 等は入っているのに `npm root -g` には playwright が
   無いので、`NODE_PATH=/work/var/driver/node_modules` で host 側に入れたものを渡している。
@@ -179,10 +195,9 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
 - **ESM の bare import は `NODE_PATH` を見ない。** そのため `driver.mjs` は
   `import ... from 'playwright'` ではなく `createRequire(import.meta.url)('playwright')`
   で読んでいる。ここを普通の import に「直す」と `ERR_MODULE_NOT_FOUND` で落ちる。
-- **`npm run lint` は通らない。** `eslint@9.33` に対して `@vue/cli-plugin-eslint@5.0.8`
-  が ESLint 8 で削除済みの API（`extensions`, `useEslintrc` 等）を渡すため、対象ファイルに
-  到達する前に `new ESLint()` で落ちる。無改変の magistra でも同じなので、自分の変更を
-  疑わなくてよい。`vue.config.js` の `lintOnSave: false` も同じ理由。
+- **`npm run lint` は Vite 移行後は通る。** `cd client && npm run lint` は ESLint の
+  flat config（`eslint.config.*`）で動く。上の「通らない」という記述は webpack/vue-cli
+  時代（`@vue/cli-plugin-eslint`）のもので、Vite 移行後は解消済み。
 - **client のビルドには先に server のビルドが要る。** client は共有型を
   `import * as protocol from 'server/protocol'` で参照し、これは server の
   `package.json` の `exports` 経由で `server/dist/protocol.d.ts` に解決される。

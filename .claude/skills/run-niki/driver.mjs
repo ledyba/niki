@@ -55,8 +55,8 @@ async function newPage(browser, { delay = 0, fail = false, failOnce = false } = 
     return route.fulfill({ response: resp, body });
   });
   await page.goto(BASE, { waitUntil: 'networkidle' });
-  // 今日の日記のエディタ。isToday の日だけ Quill が描画される。
-  await page.waitForSelector('.ql-editor', { timeout: 20000 });
+  // どの日も表示モードで始まるので、今日の欄の編集ボタンを押して Quill を出す。
+  await openEditor(page);
   // インジケーターの状態遷移を漏れなく記録する（クラス名で判別）。
   await page.evaluate(() => {
     window.__states = [];
@@ -89,6 +89,23 @@ const waitKind = (page, kind, timeout = 20000) =>
       return !!el && el.className.includes('save-status--' + k);
     }, kind, { timeout });
 
+const pad = (n) => String(n).padStart(2, '0');
+const today = () => {
+  const now = new Date();
+  return `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
+};
+
+// 指定した日(既定は今日)の編集モードを開く。編集は日ごとのトグルなので、
+// 初回読み込み・リロード後・月の移動後はいずれも開き直す必要がある。
+async function openEditor(page, date = today()) {
+  const toggle = `.diary[data-date="${date}"] .diary__edit-toggle`;
+  await page.waitForSelector(toggle, { timeout: 20000 });
+  if ((await page.getAttribute(toggle, 'aria-pressed')) !== 'true') {
+    await page.click(toggle);
+  }
+  await page.waitForSelector('.ql-editor', { timeout: 20000 });
+}
+
 async function type(page, text) {
   await page.click('.ql-editor');
   await page.keyboard.type(text, { delay: 15 });
@@ -111,7 +128,7 @@ const scenarios = {
     check('save: POST は 1 本', st.posts === 1, `posts=${st.posts}`);
     // 本当に保存されたか、リロードして本文が残っているかで確かめる。
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('.ql-editor');
+    await openEditor(page);
     const text = await page.textContent('.ql-editor');
     check('save: リロード後も本文が残る', text.includes('ドライバからの書き込み'), JSON.stringify(text.slice(0, 40)));
     await ctx.close();
@@ -186,7 +203,7 @@ const scenarios = {
     await page.click(`.month a[href="${other}"]`);   // 保存中に離脱
     await page.waitForTimeout(4500);                 // in-flight が解決するのを待つ
     await page.click(`.month a[href="${cur}"]`);
-    await page.waitForSelector('.ql-editor', { timeout: 15000 });
+    await openEditor(page);
     await type(page, '復帰後の編集');
     let ok = true;
     try { await waitKind(page, 'saved', 15000); } catch { ok = false; }

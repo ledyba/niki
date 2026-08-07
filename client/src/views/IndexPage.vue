@@ -1,9 +1,15 @@
 <template>
   <div class="home">
     <MonthList class="month-list" v-bind:months="months"/>
-    <DiaryList class="texts" v-bind:diaries="diaries" v-bind:save-status="saveStatus" v-on:diary-change="onDiaryChange($event)" />
+    <DiaryList
+        class="texts"
+        v-bind:diaries="diaries"
+        v-bind:statuses="statuses"
+        v-bind:editing-date="editingDate"
+        v-on:diary-change="onDiaryChange($event)"
+        v-on:toggle-edit="onToggleEdit($event)" />
   </div>
-</template> 
+</template>
 
 <script lang="ts">
 import MonthList from '@/components/MonthList.vue';
@@ -13,6 +19,7 @@ import type {SaveStatus} from '@/components/SaveStatusIndicator.vue';
 import type * as protocol from 'server/protocol';
 import { defineComponent } from 'vue';
 import dayjs from 'dayjs';
+import { formatMonth, formatDate, todayDate, buildMonths, buildDiaries } from '@/calendar';
 
 const UNSAVED_WARNING = '保存されていない変更、または保存に失敗した変更があります。このページを離れてもよろしいですか？';
 
@@ -25,7 +32,7 @@ function parseIntArg(str: string): number | null {
 }
 
 async function fetchDiaries(year: number, month: number): Promise<protocol.Diaries.Response> {
-  const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}`);
+  const raw = await fetch(`/diaries/${formatMonth(year, month)}`);
   const json = await raw.json();
   return json as protocol.Diaries.Response;
 }
@@ -41,7 +48,7 @@ async function updateDiary(year: number, month: number, day: number, text: strin
       text: text,
     } as protocol.UpdateDiary.RequestBody)
   };
-  const raw = await fetch(`/diaries/${('0000'+year).slice(-4)}/${('00'+month).slice(-2)}/${('00'+day).slice(-2)}`, param);
+  const raw = await fetch(`/diaries/${formatDate(year, month, day)}`, param);
   if (!raw.ok) {
     let message = `${raw.status} ${raw.statusText}`.trim();
     try {
@@ -71,17 +78,26 @@ const IndexPage = defineComponent({
       month: month,
       months: Array<string>(),
       diaries: Array<protocol.Entity.Diary>(),
+      // 編集中の日('YYYY/MM/DD')。一度に開くエディタは高々1つ。
+      // 今日は最初から編集モードで開く。
+      editingDate: todayDate() as string | null,
       updateTicket: null as number | null,
       // 保存を直列化する: 常に高々1本だけ in-flight にする。
       saving: false,
-      // in-flight 中に入った編集を1個だけ保持するキュー(最新で上書き)。
-      pending: null as DiaryChangeEvent | null,
+      // in-flight 中に入った編集を日付ごとに保持するキュー(同じ日は最新で上書き)。
+      // 日付をまたいで編集できるので、単一スロットだと別の日の編集で潰れてしまう。
+      pending: new Map<string, DiaryChangeEvent>(),
       // 月切替などで文脈を破棄する世代カウンタ。in-flight の解決時に
       // まだ同じ文脈(=同じ月)かを判定し、古い解決を無視するために使う。
       saveSeq: 0,
-      // 最後の保存成功以降に編集があったか(離脱ガード用)。
-      dirty: false,
-      saveStatus: { kind: 'idle', message: '' } as SaveStatus,
+      // flushSave が一度失敗した日。次のユーザー編集で pending に入り直し、
+      // このセットから外れるまでは nextJob() の候補から除外する
+      // (無限リトライ防止。同じ日を回し続けて他の日の保存を止めないため)。
+      failedDates: new Set<string>(),
+      // 日付('YYYY/MM/DD')ごとの保存状態。ここを日ごとに持つことで、
+      // A日の保存失敗中にB日の保存が成功しても、Aのエラー表示が
+      // 消えたり上書きされたりしない。
+      statuses: new Map<string, SaveStatus>(),
       saveHandler_: this.saveHandler.bind(this),
       beforeUnloadHandler_: this.beforeUnloadHandler.bind(this),
     };
@@ -106,6 +122,9 @@ const IndexPage = defineComponent({
       return false;
     }
     this.resetSaveState();
+    // 今月に戻れば今日が開き、それ以外の月に移れば何も開かない、というのが
+    // 「初期値が今日」だけで自然に成り立つ。テンプレート側に分岐は要らない。
+    this.editingDate = todayDate();
     this.year = parseIntArg(route.params.year as string) || dayjs().year();
     this.month = parseIntArg(route.params.month as string) || dayjs().month() + 1;
     this.updateDiaries();
@@ -120,35 +139,16 @@ const IndexPage = defineComponent({
     updateDiaries: function () {
       fetchDiaries(this.year, this.month)
           .then((resp) => {
-            const now = dayjs();
-            const months = resp.months;
-            const currentMonth = `${('0000'+now.year()).slice(-4)}/${('00'+(now.month() + 1)).slice(-2)}`;
-            if(months.length <= 0 || months[0] !== currentMonth) {
-              months.unshift(currentMonth);
-            }
-            this.months = months;
-            const diaries = resp.diaries;
-            let alreadyPosted = false;
-            if(diaries.length > 0) {
-              const first = diaries[0];
-              alreadyPosted = first.year === now.year() && first.month === now.month() + 1 && first.day === now.date();
-            }
-            if(!alreadyPosted && this.year === now.year() && this.month === now.month()+1) {
-              const diary: protocol.Entity.Diary = {
-                year: now.year(),
-                month: now.month() + 1,
-                day: now.date(),
-                text: '',
-              };
-              diaries.unshift(diary);
-            }
-            this.diaries = diaries;
+            this.months = buildMonths(resp.months);
+            this.diaries = buildDiaries(this.year, this.month, resp.diaries);
           })
           .catch((err) => console.error("Failed to load diaries", err));
     },
     hasUnsavedRisk: function (): boolean {
-      // dirty(未保存の編集あり) か error(保存失敗) のとき離脱をガードする。
-      return this.dirty || this.saveStatus.kind === 'error';
+      // in-flight中、またはキューに保存待ちの日が残っているなら離脱をガードする。
+      // 失敗したジョブは必ず pending に戻しているので、error の判定も
+      // pending.size > 0 に含まれる。
+      return this.saving || this.pending.size > 0;
     },
     beforeUnloadHandler: function (event: BeforeUnloadEvent) {
       if (this.hasUnsavedRisk()) {
@@ -166,21 +166,33 @@ const IndexPage = defineComponent({
       }
       this.saveSeq += 1;
       this.saving = false;
-      this.pending = null;
-      this.dirty = false;
-      this.saveStatus = { kind: 'idle', message: '' };
+      this.pending = new Map<string, DiaryChangeEvent>();
+      this.failedDates = new Set<string>();
+      this.statuses = new Map<string, SaveStatus>();
+    },
+    onToggleEdit: function (date: string) {
+      // 開いているエディタは常に高々1つ。別の日を開けば前の日は閉じる。
+      this.editingDate = (this.editingDate === date) ? null : date;
     },
     onDiaryChange: function (event: DiaryChangeEvent) {
-      // 編集が入った → dirty。最新テキストをキュー(長さ1)に上書き保持。
-      this.dirty = true;
-      this.pending = event;
+      // 表示用の本文も即座に差し替える。保存を待たずにエディタを閉じても
+      // 編集後の HTML が見えるようにするため。
+      const target = this.diaries.find((it) => it.year === event.year && it.month === event.month && it.day === event.day);
+      if (target !== undefined) {
+        target.text = event.text;
+      }
+      // 最新テキストを日付ごとのキューに上書き保持。新しい打鍵が入った以上、
+      // 直前の失敗はもう関係ない → failedDates から外して通常経路に戻す。
+      const key = formatDate(event.year, event.month, event.day);
+      this.failedDates.delete(key);
+      this.pending.set(key, event);
       if (this.saving) {
         // in-flight 中: スピナー(保存中)は途切れさせず維持し、
         // 新しいデバウンスも張らない。完了時に pending を処理する。
         return;
       }
       // in-flight でない通常の編集: idle(空欄) 表示 + 200ms デバウンス。
-      this.saveStatus = { kind: 'idle', message: '' };
+      this.statuses.set(key, { kind: 'idle', message: '' });
       if(this.updateTicket !== null) {
         clearTimeout(this.updateTicket);
         this.updateTicket = null;
@@ -190,19 +202,32 @@ const IndexPage = defineComponent({
         this.flushSave();
       }, 200);
     },
+    // pending の中で failedDates に入っていない最初のジョブを返す(無ければ null)。
+    // 失敗した日を選び続けると、他の日の編集がいつまでも保存されなくなるため。
+    nextJob: function (): [string, DiaryChangeEvent] | null {
+      for (const entry of this.pending) {
+        const [key] = entry;
+        if (!this.failedDates.has(key)) {
+          return entry;
+        }
+      }
+      return null;
+    },
     // キューに保存待ちがあれば、直列に(高々1本ずつ)保存を実行する。
-    // 成功して pending が残っていればデバウンスを待たず即座に次を投げ、
-    // スピナーを継続させる。エラー時はループを止めて error 表示にする。
+    // 成功して他の保存待ちが残っていればデバウンスを待たず即座に次を投げ、
+    // スピナーを継続させる。失敗時はその日を failedDates に入れて棚上げし、
+    // 他の日があれば続けて処理する(無限リトライにはならない)。
     flushSave: function () {
-      if (this.pending === null) {
+      const next = this.nextJob();
+      if (next === null) {
         return;
       }
-      const job = this.pending;
-      this.pending = null;
+      const [key, job] = next;
+      this.pending.delete(key);
       // 現在の文脈(月)を記録。解決時に月が切り替わっていたら無視する。
       const seq = this.saveSeq;
       this.saving = true;
-      this.saveStatus = { kind: 'saving', message: '' };
+      this.statuses.set(key, { kind: 'saving', message: '' });
       updateDiary(job.year, job.month, job.day, job.text)
           .then((resp) => {
             if(seq !== this.saveSeq) {
@@ -210,16 +235,16 @@ const IndexPage = defineComponent({
               return;
             }
             if(resp.months) {
-              this.months = resp.months;
+              this.months = buildMonths(resp.months);
             }
-            if(this.pending !== null) {
-              // 保存中に編集が入っていた → デバウンスを待たず即次を保存。
+            this.failedDates.delete(key);
+            this.statuses.set(key, { kind: 'saved', message: '' });
+            if(this.nextJob() !== null) {
+              // 他に保存待ちの日があった → デバウンスを待たず即次を保存。
               // saving は継続し、スピナーを途切れさせない。
               this.flushSave();
             } else {
               this.saving = false;
-              this.dirty = false;
-              this.saveStatus = { kind: 'saved', message: '' };
             }
           })
           .catch((err) => {
@@ -229,11 +254,16 @@ const IndexPage = defineComponent({
             this.saving = false;
             // 失敗した編集は破棄せず「未保存」として残す。自動リトライは
             // せず(無限ループ回避)、次のユーザー編集で通常経路から再送する。
-            if(this.pending === null) {
-              this.pending = job;
+            // より新しい編集が同じ日に入っていたらそちらを優先する。
+            if(!this.pending.has(key)) {
+              this.pending.set(key, job);
             }
+            this.failedDates.add(key);
             const message = err instanceof Error ? err.message : String(err);
-            this.saveStatus = { kind: 'error', message: message };
+            this.statuses.set(key, { kind: 'error', message: message });
+            // 失敗した日は failedDates に入っているので選ばれない。
+            // 他の日の保存待ちがあれば続けて処理する。
+            this.flushSave();
           });
     }
   }
