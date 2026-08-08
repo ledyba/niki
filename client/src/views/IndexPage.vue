@@ -254,11 +254,17 @@ const IndexPage = defineComponent({
             this.saving = false;
             // 失敗した編集は破棄せず「未保存」として残す。自動リトライは
             // せず(無限ループ回避)、次のユーザー編集で通常経路から再送する。
-            // より新しい編集が同じ日に入っていたらそちらを優先する。
+            // より新しい編集が同じ日に入っていたらそちらを優先する: in-flight
+            // 中に入った新しい編集はまだ一度も送信していないので、
+            // failedDates に入れて棚上げしてはいけない(送られないまま
+            // 止まってしまう)。job(今回失敗した古い方)を戻すときだけ
+            // failedDates に入れる。それも失敗すればこの catch を再び通り、
+            // 今度は pending.has(key) が false なので改めて failedDates に
+            // 入って止まる(無限ループにはならない)。
             if(!this.pending.has(key)) {
               this.pending.set(key, job);
+              this.failedDates.add(key);
             }
-            this.failedDates.add(key);
             const message = err instanceof Error ? err.message : String(err);
             this.statuses.set(key, { kind: 'error', message: message });
             // 失敗した日は failedDates に入っているので選ばれない。

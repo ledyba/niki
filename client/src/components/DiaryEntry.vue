@@ -38,6 +38,11 @@ const DiaryEntry = defineComponent({
     DiaryEditor,
     SaveStatusIndicator,
   },
+  // emits を宣言しないと、Vue 3 は同名の v-on をカスタムイベントに加えて
+  // ルート要素へのネイティブ DOM リスナとしても付ける。DiaryEditor 内の
+  // Quill ツールバーが持つ <input type="file"> 等の change がバブリングして
+  // 拾われ、onEditorChange に Event が渡ってしまう事故を防ぐ。
+  emits: ['change', 'toggle-edit'],
   props: {
     diary: {
       type: Object,

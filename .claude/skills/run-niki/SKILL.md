@@ -87,7 +87,7 @@ docker run --rm --network host -v "$PWD":/work -w /work \
   node .claude/skills/run-niki/driver.mjs all
 ```
 
-末尾に `===== 15/15 PASS =====` が出れば全部通っている。失敗すると exit 1。
+末尾に `===== 20/20 PASS =====` が出れば全部通っている。失敗すると exit 1。
 
 `--user` を省くとスクリーンショットが root 所有でホストに残り、あとで消せなくなる
 （下記 Gotchas 参照）。
@@ -96,9 +96,14 @@ docker run --rm --network host -v "$PWD":/work -w /work \
 |---|---|
 | `save` | 打鍵 → `保存中` → `☑ 保存しました`、リロードしても本文が残る（既定） |
 | `queue` | 保存中の追加編集：スピナー継続・同時POSTは最大1本・キュー1個で再送 |
-| `error` | POST 失敗で `✖ エラー：...`、自動リトライしない、次の編集で復帰 |
+| `error` | POST 失敗で `✖ エラー：...`、自動リトライしない、次の編集で復帰、in-flight 失敗中に入った追記も取りこぼさず再送される |
 | `month` | 保存中に月を往復しても保存機構が固まらない |
+| `toggle` | 今日以外の日を編集トグルで開ける／開けるエディタは常に高々1つ／保存済みはその日の欄にだけ出る／完了を押すと本文が HTML で表示される |
 | `all` | 上記すべて |
+
+`toggle` は今日が月初(1日)だと対象日が取れず FAIL する（未来の日は一覧に出ないため、
+同じ月に「今日より前の日」が無い）。日を跨いで再実行するか、当月にもう1件データを
+追加してから再実行すること。
 
 スクリーンショット → `var/shots/*.png`。サーバログ → `/tmp/niki-server.log`。
 
@@ -146,9 +151,9 @@ make dev        # Ctrl-C で全部止まる
 
 ## Test
 
-Vite 移行後は `client` のユニットテストも通る（vitest）。ただし `server/protocol` を
-型で参照するテストコード（`calendar.ts` 経由）があるので、**先に server を
-ビルドしておく**こと（Build の順序と同じ理由）。
+`client` のユニットテストは vitest で通る。ただし `server/protocol` を型で参照する
+テストコード（`calendar.ts` 経由）があるので、**先に server をビルドしておく**こと
+（Build の順序と同じ理由）。
 
 ```bash
 cd server && npm run build && cd ..   # 先に。無いと client の型解決が壊れる
@@ -157,7 +162,7 @@ cd client && npm run test:unit        # vitest run
 
 純粋関数(`calendar.ts` の月・日組み立て)はここでカバーする。それ以外の
 挙動（保存キュー・DOM・実際の API 往復）は**上記のドライバ**が受け持ち、
-そちらは 15/15 通る。両方揃って初めてアプリ全体をカバーしている。
+そちらは 20/20 通る。両方揃って初めてアプリ全体をカバーしている。
 
 ## Gotchas
 
@@ -172,8 +177,10 @@ cd client && npm run test:unit        # vitest run
   `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
   Quill と `.ql-editor` が描画され、それ以外は読み取り専用の HTML。一度に開ける
   エディタは高々1つ(`IndexPage` の `editingDate`)で、今日は初期状態で開いている。
-  ドライバはページ読み込み直後・リロード後・月移動後にそれぞれ `openEditor()` で
-  対象日のトグルを押してから `.ql-editor` を待つ。
+  `save`/`queue`/`error`/`month` はいずれも今日だけを触るので、
+  `openEditor()`(既定引数が今日)は `aria-pressed` が既に `"true"` のまま
+  `.ql-editor` を待つだけで、トグルの `page.click()` 自体は通らない。
+  今日以外の日を実際にクリックでトグルする経路は `toggle` シナリオが受け持つ。
 - **`.save-status` は日ごとに出るので同時に複数存在しうる。** `IndexPage` は
   `statuses`(日付キーの `Map`)を持ち、`DiaryEntry` は自分の日のエントリがあれば
   それを、無ければ編集中のときだけ `idle` を出す(`DiaryList` の `statuses` prop
@@ -195,9 +202,6 @@ cd client && npm run test:unit        # vitest run
 - **ESM の bare import は `NODE_PATH` を見ない。** そのため `driver.mjs` は
   `import ... from 'playwright'` ではなく `createRequire(import.meta.url)('playwright')`
   で読んでいる。ここを普通の import に「直す」と `ERR_MODULE_NOT_FOUND` で落ちる。
-- **`npm run lint` は Vite 移行後は通る。** `cd client && npm run lint` は ESLint の
-  flat config（`eslint.config.*`）で動く。上の「通らない」という記述は webpack/vue-cli
-  時代（`@vue/cli-plugin-eslint`）のもので、Vite 移行後は解消済み。
 - **client のビルドには先に server のビルドが要る。** client は共有型を
   `import * as protocol from 'server/protocol'` で参照し、これは server の
   `package.json` の `exports` 経由で `server/dist/protocol.d.ts` に解決される。

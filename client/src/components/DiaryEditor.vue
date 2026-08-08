@@ -46,6 +46,13 @@ const defaultOptions: QuillOptions = {
 
 const DiaryEditor = defineComponent({
   name: 'quill-editor',
+  // emits を宣言しないと、Vue 3 は同名の v-on をカスタムイベントに加えて
+  // ルート要素(.quill-editor)へのネイティブ DOM リスナとしても付ける。
+  // Quill のツールバーは <input type="file" class="ql-image"> や
+  // リンク/動画ツールチップの <input type="text"> をこのルート div の
+  // 内側に生成するので、宣言していないと画像選択やリンク確定でバブリング
+  // した change を拾ってしまい、親の change ハンドラに素の Event が渡る。
+  emits: ['change', 'blur', 'focus', 'input', 'ready'],
   data: function() {
     return {
       options_: {} as QuillOptions,

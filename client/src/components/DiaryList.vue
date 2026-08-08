@@ -23,6 +23,9 @@ const DiaryList = defineComponent({
   components: {
     DiaryEntry,
   },
+  // emits を宣言しないと、Vue 3 は同名の v-on をカスタムイベントに加えて
+  // ルート要素へのネイティブ DOM リスナとしても付ける(DiaryEntry 側の注記参照)。
+  emits: ['diary-change', 'toggle-edit'],
   data: function() {
     return {
     };
@@ -49,9 +52,8 @@ const DiaryList = defineComponent({
   },
   methods: {
     isEditing: function (diary: protocol.Entity.Diary): boolean {
-      if (this.editingDate === null) {
-        return false;
-      }
+      // formatDate は必ず文字列を返すので、editingDate が null のときは
+      // この比較だけで自然に false になる。
       return this.editingDate === formatDate(diary.year, diary.month, diary.day);
     },
     onDiaryChange: function (event: DiaryChangeEvent) {

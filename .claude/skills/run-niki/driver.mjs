@@ -5,11 +5,13 @@
 // コンテナの中から動かす。実行方法は SKILL.md を参照。
 //
 //   node driver.mjs [scenario...]
-//     save   打鍵 → 保存 → 「☑ 保存しました」（既定）
-//     queue  保存中の追加編集が直列化され、キュー1個で送られる
-//     error  POST 失敗時に「✖ エラー：...」が出る／自動リトライしない
-//     month  保存中に月を移動しても保存機構が固まらない
-//     all    上記すべて
+//     save    打鍵 → 保存 → 「☑ 保存しました」（既定）
+//     queue   保存中の追加編集が直列化され、キュー1個で送られる
+//     error   POST 失敗時に「✖ エラー：...」が出る／自動リトライしない
+//     month   保存中に月を移動しても保存機構が固まらない
+//     toggle  今日以外の日を編集トグルで開ける／開けるエディタは高々1つ／
+//             保存済みはその日の欄にだけ出る
+//     all     上記すべて
 //
 // 環境変数:
 //   BASE_URL  既定 http://127.0.0.1:3000/
@@ -110,6 +112,18 @@ async function type(page, text) {
   await page.click('.ql-editor');
   await page.keyboard.type(text, { delay: 15 });
 }
+
+// ホスト側(Node)の値が条件を満たすまでポーリングする。ページ内 DOM の状態
+// ではなく `st.posts` のような、ルートハンドラが直接書き換えている値を
+// 待つときに使う。
+async function waitFor(fn, timeout = 20000, interval = 100) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (await fn()) return true;
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  return false;
+}
 const shot = (page, name) => page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
 
 const scenarios = {
@@ -183,6 +197,23 @@ const scenarios = {
     check('error: 次の編集で再送され ☑ に戻る', /error → idle → saving → saved/.test(seq(rs)), seq(rs));
     check('error: 再送に失敗分の本文が残る', (r.st.bodies.at(-1) || '').includes('失敗する'), r.st.bodies.at(-1));
     await r.ctx.close();
+
+    // in-flight 失敗中に同じ日への追記が入った場合、その追記が一度も送信
+    // されないまま止まらないこと(failedDates への無条件追加の回帰チェック)。
+    // POST は 1 本目が解決するまで delay で in-flight を維持させる。
+    const f = await newPage(browser, { fail: true, delay: 1200 });
+    await type(f.page, 'A失敗中');
+    await waitKind(f.page, 'saving');
+    await f.page.waitForTimeout(300);   // 1 本目がまだ in-flight のうちに…
+    await type(f.page, 'B追記');        // 同じ日へ追記する
+    const sentSecond = await waitFor(() => f.st.posts >= 2, 15000);
+    console.log('  in-flight追記: posts:', f.st.posts, '| bodies:', JSON.stringify(f.st.bodies));
+    check(
+      'error: in-flight 失敗中の追記も取りこぼさず再送される',
+      sentSecond && (f.st.bodies.at(-1) || '').includes('B追記'),
+      `posts=${f.st.posts} bodies=${JSON.stringify(f.st.bodies)}`,
+    );
+    await f.ctx.close();
   },
 
   // 保存中に月を移動して戻っても、保存機構が固まらないこと。
@@ -210,6 +241,54 @@ const scenarios = {
     await shot(page, 'month-1-after');
     console.log('  posts:', st.posts, '| maxInflight:', st.maxInflight, '| kind:', await kindNow(page));
     check('month: 月を往復しても保存が動き続ける（デッドロックなし）', ok, `kind=${await kindNow(page)}`);
+    await ctx.close();
+  },
+
+  // 日ごとのトグル本体を踏む: 今日以外の日を開ける・開けるエディタは高々1つ・
+  // 保存インジケーターはその日の欄にだけ出る・閉じれば HTML 表示に戻る。
+  async toggle(browser) {
+    const { ctx, page } = await newPage(browser);
+    const t = today();
+    const now = new Date();
+    if (now.getDate() === 1) {
+      // 今日が月初だと「今日より前で同じ月の日」が存在しない(未来の日は
+      // 一覧に出ないため)。日を跨いで再実行するか、当月にもう1件日記を
+      // 入れてから再実行してほしい、という既知の限界として FAIL で報告する。
+      check('toggle: 今日以外の対象日が必要（今日が月初のため無い。日を跨いで再実行するか当月にデータを追加）', false, `today=${t}`);
+      await ctx.close();
+      return;
+    }
+    // today > 1 日なら、当月の1日は必ず存在し today とも重ならない。
+    const target = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/01`;
+
+    // 1. 今日以外の ✎ 編集 を押すとその日のエディタが開く。
+    await page.click(`.diary[data-date="${target}"] .diary__edit-toggle`);
+    await page.waitForSelector(`.diary[data-date="${target}"] .ql-editor`, { timeout: 20000 });
+    check('toggle: 別の日の編集ボタンを押すとその日にエディタが開く', true, `target=${target}`);
+
+    // 2. 開くエディタは常に高々1つ → 今日のエディタは閉じている。
+    const todayEditorGone = (await page.$(`.diary[data-date="${t}"] .ql-editor`)) === null;
+    check('toggle: 別の日を開くと今日のエディタは閉じる（エディタは高々1つ）', todayEditorGone);
+
+    // 3. target に打鍵すると保存され、target の欄にだけ ☑ が出る
+    //    (document.querySelector('.save-status') だと日付降順の先頭 = 今日を
+    //    拾ってしまうので、data-date で対象日に絞って見る)。
+    await page.click(`.diary[data-date="${target}"] .ql-editor`);
+    await page.keyboard.type('別の日のトグルテスト', { delay: 15 });
+    await page.waitForFunction((d) => {
+      const el = document.querySelector(`.diary[data-date="${d}"] .save-status`);
+      return !!el && el.className.includes('save-status--saved');
+    }, target, { timeout: 20000 });
+    check('toggle: 対象の日の欄に保存済みが出る', true, `target=${target}`);
+    await shot(page, 'toggle-1-saved');
+
+    // 4. もう一度 ☑ 完了 を押すとエディタが消え、保存した本文が HTML で表示される。
+    await page.click(`.diary[data-date="${target}"] .diary__edit-toggle`);
+    await page.waitForSelector(`.diary[data-date="${target}"] .ql-editor`, { state: 'detached', timeout: 20000 });
+    const html = await page.$eval(`.diary[data-date="${target}"]`, (el) => el.textContent || '');
+    check('toggle: 完了を押すとエディタが閉じ保存した本文が表示される', html.includes('別の日のトグルテスト'), html.slice(0, 60));
+    await shot(page, 'toggle-2-closed');
+
     await ctx.close();
   },
 };
