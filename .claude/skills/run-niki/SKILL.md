@@ -160,9 +160,13 @@ cd server && npm run build && cd ..   # 先に。無いと client の型解決�
 cd client && npm run test:unit        # vitest run
 ```
 
-純粋関数(`calendar.ts` の月・日組み立て)はここでカバーする。それ以外の
-挙動（保存キュー・DOM・実際の API 往復）は**上記のドライバ**が受け持ち、
-そちらは 20/20 通る。両方揃って初めてアプリ全体をカバーしている。
+純粋関数(`calendar.ts` の月・日組み立て)に加えて、jsdom 上のコンポーネント
+テストもここでカバーする(`DiaryList.spec.ts` は本物の Quill ごと
+`DiaryEntry`/`DiaryEditor` をマウントして、`emits` 未宣言によるネイティブ
+`change` のフォールスルーを固定している)。**上記のドライバ**が受け持つのは
+実ブラウザでしか出ない領域 — 保存キューの実挙動・実際の API 往復・
+月の移動やトグルの操作系で、そちらは 20/20 通る。両方揃って初めて
+アプリ全体をカバーしている。
 
 ## Gotchas
 

@@ -63,10 +63,14 @@ describe('DiaryList.vue: ネイティブ change のフォールスルー対策',
       const editorRoot = wrapper.find('.quill-editor')
       expect(editorRoot.exists()).toBe(true)
 
-      // 実際の発火源は Quill ツールバー内の <input type="file"> / URL 入力欄
-      // なので、.ql-toolbar 配下の要素があればそこから投げるのが実態に近い。
-      // (無ければ .quill-editor の子要素から投げても、ルート要素へのネイティブ
-      // リスナが付くバグ自体はバブリングで再現できる。)
+      // 実際の発火源は Quill ツールバー内の <input type="file"> / URL 入力欄だが、
+      // Quill はそれらを遅延生成するので、マウント直後の .ql-toolbar 配下に
+      // <input> はまだ 1 つも無い。そこで .ql-toolbar 要素そのものから投げる。
+      // バブリング経路(.ql-toolbar → .quill-editor → DiaryEntry のルート)は
+      // 入力欄から投げた場合と同じなので、ルート要素にネイティブリスナが付く
+      // バグはこれで再現できる。
+      // (.ql-toolbar が見つからない場合は .quill-editor 自身から投げる。これも
+      // DiaryEditor のルートなので同様に再現できる。)
       const toolbar = editorRoot.find('.ql-toolbar')
       const target = (toolbar.exists() ? toolbar : editorRoot).element
 
