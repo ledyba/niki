@@ -57,7 +57,7 @@ async function newPage(browser, { delay = 0, fail = false, failOnce = false } = 
     return route.fulfill({ response: resp, body });
   });
   await page.goto(BASE, { waitUntil: 'networkidle' });
-  // どの日も表示モードで始まるので、今日の欄の編集ボタンを押して Quill を出す。
+  // 今日の欄の Quill が出るまで待つ(editingDate の初期値が今日なので既に開いている)。
   await openEditor(page);
   // インジケーターの状態遷移を漏れなく記録する（クラス名で判別）。
   await page.evaluate(() => {
@@ -97,8 +97,11 @@ const today = () => {
   return `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
 };
 
-// 指定した日(既定は今日)の編集モードを開く。編集は日ごとのトグルなので、
-// 初回読み込み・リロード後・月の移動後はいずれも開き直す必要がある。
+// 指定した日(既定は今日)の編集モードを開いて Quill が出るまで待つ。
+// 今日は IndexPage の editingDate 初期値なので、初回読み込み・リロード後・
+// 月の往復後のいずれでも既に aria-pressed="true" で開いており、click は通らず
+// 待つだけになる。click が実際に走るのは今日以外の日を渡したときで、いまの
+// 呼び出し元は 4 箇所とも既定引数(今日)。ガードは将来そう呼ぶときのために残す。
 async function openEditor(page, date = today()) {
   const toggle = `.diary[data-date="${date}"] .diary__edit-toggle`;
   await page.waitForSelector(toggle, { timeout: 20000 });

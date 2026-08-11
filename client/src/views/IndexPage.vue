@@ -137,8 +137,16 @@ const IndexPage = defineComponent({
       return false;
     },
     updateDiaries: function () {
+      // 現在の文脈(月)を記録。回線が遅いと 3月→4月 と移った際に 3月の応答が
+      // 後に解決しうる。そのまま格納すると 3月のエントリが year/month を
+      // 保ったまま 4月のページに並び、その行を編集すると 3月へ POST してしまう。
+      const seq = this.saveSeq;
       fetchDiaries(this.year, this.month)
           .then((resp) => {
+            if(seq !== this.saveSeq) {
+              // 文脈が破棄された(月切替) → 古い月の応答は捨てる。
+              return;
+            }
             this.months = buildMonths(resp.months);
             this.diaries = buildDiaries(this.year, this.month, resp.diaries);
           })
@@ -189,6 +197,12 @@ const IndexPage = defineComponent({
       if (this.saving) {
         // in-flight 中: スピナー(保存中)は途切れさせず維持し、
         // 新しいデバウンスも張らない。完了時に pending を処理する。
+        // ただし別の日の「☑ 保存しました」は、その日に新しい編集が入った以上
+        // もう正しくないので消す(in-flight の日は 'saving' なので影響しない)。
+        // 'error' は消さない。まだ再送していない以上「失敗した」は今も事実なので。
+        if (this.statuses.get(key)?.kind === 'saved') {
+          this.statuses.set(key, { kind: 'idle', message: '' });
+        }
         return;
       }
       // in-flight でない通常の編集: idle(空欄) 表示 + 200ms デバウンス。
