@@ -1,19 +1,27 @@
 <template>
-  <div class="diary">
-    <h2>{{ `0000${diary.year}`.slice(-4) }}/{{ `00${diary.month}`.slice(-2) }}/{{ `00${diary.day}`.slice(-2) }}</h2>
-    <template v-if="isToday">
+  <div class="diary" v-bind:data-date="date">
+    <h2 class="diary__header">
+      <span class="diary__date">{{ date }}</span>
+      <button
+          type="button"
+          class="diary__edit-toggle"
+          v-bind:aria-pressed="editing"
+          v-bind:title="editing ? '編集をやめて表示に戻る' : 'この日の日記を編集する'"
+          v-on:click="$emit('toggle-edit', date)">
+        {{ editing ? '☑ 完了' : '✎ 編集' }}
+      </button>
+    </h2>
+    <template v-if="editing">
       <DiaryEditor
           ref="quillEditor"
           v-bind:content="diary.text"
-          v-bind:focused="isToday"
+          v-bind:focused="editing"
           v-on:change="onEditorChange($event)"
       />
-      <SaveStatusIndicator v-bind:status="saveStatus" />
     </template>
-    <div v-else
-        v-html="diary.text"
-        v-bind:focused="isToday"
-    />
+    <div v-else-if="diary.text" v-html="diary.text" />
+    <div v-else class="diary__empty">（まだ書かれていません）</div>
+    <SaveStatusIndicator v-if="status" v-bind:status="status" />
   </div>
 </template>
 
@@ -23,23 +31,36 @@ import { defineComponent, type PropType } from 'vue';
 import type * as protocol from 'server/protocol';
 import DiaryEditor, {type EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import SaveStatusIndicator, {type SaveStatus} from '@/components/SaveStatusIndicator.vue'
-import dayjs from 'dayjs';
+import { formatDate } from '@/calendar';
 
 const DiaryEntry = defineComponent({
   components: {
     DiaryEditor,
     SaveStatusIndicator,
   },
+  // emits を宣言しないと、Vue 3 は同名の v-on をカスタムイベントに加えて
+  // ルート要素へのネイティブ DOM リスナとしても付ける。DiaryEditor 内の
+  // Quill ツールバーが持つ <input type="file"> 等の change がバブリングして
+  // 拾われ、onEditorChange に Event が渡ってしまう事故を防ぐ。
+  emits: ['change', 'toggle-edit'],
   props: {
     diary: {
       type: Object,
       required: false,
       default: () => ({} as protocol.Entity.Diary)
     },
-    saveStatus: {
-      type: Object as PropType<SaveStatus>,
+    // 今日かどうかでは分岐しない。どの日も同じように編集できる。
+    editing: {
+      type: Boolean,
       required: false,
-      default: (): SaveStatus => ({ kind: 'idle', message: '' }),
+      default: false,
+    },
+    // 日付('YYYY/MM/DD')ごとの保存状態。自分の日のエントリがあれば
+    // それを出す。
+    statuses: {
+      type: Object as PropType<Map<string, SaveStatus>>,
+      required: false,
+      default: (): Map<string, SaveStatus> => new Map(),
     },
   },
   data: function () {
@@ -47,9 +68,17 @@ const DiaryEntry = defineComponent({
     }
   },
   computed: {
-    isToday: function (): boolean {
-      const now = dayjs();
-      return now.year() === this.diary.year && (now.month() + 1) === this.diary.month && now.date() === this.diary.day;
+    date: function (): string {
+      return formatDate(this.diary.year, this.diary.month, this.diary.day);
+    },
+    status: function (): SaveStatus | null {
+      const own = this.statuses.get(this.date);
+      if (own !== undefined) {
+        // 自分の保存状況を出す。
+        return own;
+      }
+      // 編集中は場所を確保しておく(indicator が出たり消えたりでガタつかないように)。
+      return this.editing ? { kind: 'idle', message: '' } : null;
     },
   },
   methods: {
@@ -80,5 +109,38 @@ export type { DiaryChangeEvent };
 img {
   max-width: 100%;
   height: auto;
+}
+
+.diary__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5em;
+}
+
+.diary__edit-toggle {
+  flex: 0 0 auto;
+  font-size: 0.6em;
+  font-family: inherit;
+  color: #2c3e50;
+  background: transparent;
+  border: #2c3e50 solid 1px;
+  border-radius: 0.2em;
+  padding: 0.2em 0.6em;
+  cursor: pointer;
+}
+
+.diary__edit-toggle:hover {
+  background: #eceff1;
+}
+
+.diary__edit-toggle[aria-pressed="true"] {
+  color: white;
+  background: #2c3e50;
+}
+
+.diary__empty {
+  color: #9e9e9e;
+  font-size: 0.9em;
 }
 </style>

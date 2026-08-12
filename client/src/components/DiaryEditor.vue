@@ -46,6 +46,13 @@ const defaultOptions: QuillOptions = {
 
 const DiaryEditor = defineComponent({
   name: 'quill-editor',
+  // emits を宣言しないと、Vue 3 は同名の v-on をカスタムイベントに加えて
+  // ルート要素(.quill-editor)へのネイティブ DOM リスナとしても付ける。
+  // Quill のツールバーは <input type="file" class="ql-image"> や
+  // リンク/動画ツールチップの <input type="text"> をこのルート div の
+  // 内側に生成するので、宣言していないと画像選択やリンク確定でバブリング
+  // した change を拾ってしまい、親の change ハンドラに素の Event が渡る。
+  emits: ['change', 'blur', 'focus', 'input', 'ready'],
   data: function() {
     return {
       options_: {} as QuillOptions,
@@ -130,10 +137,16 @@ const DiaryEditor = defineComponent({
     // Watch content change
     content: function (newVal, oldVal) {
       if (this.quill) {
-        if (newVal && newVal !== oldVal && newVal !== this.content_) {
+        // 自分の text-change 由来で親が書き戻した内容は無視する。
+        // ここを素通しすると、本文を全消しした時に setText('') が跳ね返る。
+        if (newVal === this.content_) {
+          return;
+        }
+        if (newVal && newVal !== oldVal) {
           this.content_ = newVal
           this.quill.clipboard.dangerouslyPasteHTML(newVal);
         } else if (!newVal) {
+          this.content_ = ''
           this.quill.setText('')
         }
       }

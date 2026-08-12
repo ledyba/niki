@@ -87,7 +87,7 @@ docker run --rm --network host -v "$PWD":/work -w /work \
   node .claude/skills/run-niki/driver.mjs all
 ```
 
-末尾に `===== 15/15 PASS =====` が出れば全部通っている。失敗すると exit 1。
+末尾に `===== 20/20 PASS =====` が出れば全部通っている。失敗すると exit 1。
 
 `--user` を省くとスクリーンショットが root 所有でホストに残り、あとで消せなくなる
 （下記 Gotchas 参照）。
@@ -96,13 +96,19 @@ docker run --rm --network host -v "$PWD":/work -w /work \
 |---|---|
 | `save` | 打鍵 → `保存中` → `☑ 保存しました`、リロードしても本文が残る（既定） |
 | `queue` | 保存中の追加編集：スピナー継続・同時POSTは最大1本・キュー1個で再送 |
-| `error` | POST 失敗で `✖ エラー：...`、自動リトライしない、次の編集で復帰 |
+| `error` | POST 失敗で `✖ エラー：...`、自動リトライしない、次の編集で復帰、in-flight 失敗中に入った追記も取りこぼさず再送される |
 | `month` | 保存中に月を往復しても保存機構が固まらない |
+| `toggle` | 今日以外の日を編集トグルで開ける／開けるエディタは常に高々1つ／保存済みはその日の欄にだけ出る／完了を押すと本文が HTML で表示される |
 | `all` | 上記すべて |
+
+`toggle` は今日が月初(1日)だと対象日が取れず FAIL する（未来の日は一覧に出ないため、
+同じ月に「今日より前の日」が無い）。日を跨いで再実行するか、当月にもう1件データを
+追加してから再実行すること。
 
 スクリーンショット → `var/shots/*.png`。サーバログ → `/tmp/niki-server.log`。
 
-`month` シナリオには**今月以外の月**が必要。無ければ入れてから実行する。
+`month` シナリオには**今月以外の月**が必要。左のリストは「最古の日記の月から今月まで」
+なので、日記が1つも無い（または今月しか無い）と今月しか並ばない。無ければ入れてから実行する。
 
 ```bash
 docker exec -i niki_dev_pg psql -U niki -d niki \
@@ -145,14 +151,24 @@ make dev        # Ctrl-C で全部止まる
 
 ## Test
 
-ユニットテストは**壊れているので当てにしない**。
+`client` のユニットテストは vitest で通る。ただし `server/protocol` を型で参照する
+テストコード（`calendar.ts` 経由）があるので、**先に server をビルドしておく**こと
+（Build の順序と同じ理由）。
 
 ```bash
-cd client && npm run test:unit    # → exit 1: Module not found: '@/components/HelloWorld.vue'
+cd server && npm run build && cd ..   # 先に。無いと client の型解決が壊れる
+cd client && npm run test:unit        # vitest run
 ```
 
-scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を参照したまま残っている。
-**このアプリの実質的なテストは上記のドライバ**で、そちらは 15/15 通る。
+純粋関数(`calendar.ts` の月・日組み立て)に加えて、jsdom 上のコンポーネント
+テストもここでカバーする(`DiaryList.spec.ts` は本物の Quill ごと
+`DiaryEntry`/`DiaryEditor` をマウントして、`emits` 未宣言によるネイティブ
+`change` のフォールスルーを固定している。`IndexPage.spec.ts` は fetch を
+差し替えて月フェッチの解決順を入れ替え、古い月の応答が新しい月のページに
+紛れ込まないことを固定している)。**上記のドライバ**が受け持つのは
+実ブラウザでしか出ない領域 — 保存キューの実挙動・実際の API 往復・
+月の移動やトグルの操作系で、そちらは 20/20 通る。両方揃って初めて
+アプリ全体をカバーしている。
 
 ## Gotchas
 
@@ -163,9 +179,22 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
 - **ポートは 3000。** `main.ts` が `new Server(3000)` とハードコードしている。
   Dockerfile の `EXPOSE 8888`、`compose.yml` の `expose: 8888`、README の `:8888` は
   すべて古い記述で実体と合っていない。
-- **保存インジケーターは「今日」の欄にしか出ない。** `DiaryEntry.vue` が `isToday` の
-  ときだけ Quill と `.save-status` を描画し、それ以外の日は読み取り専用の HTML。
-  ドライバが `.ql-editor` を待つのはそのため。
+- **どの日も編集できる／編集モードは日ごとのトグル。** `DiaryEntry.vue` は
+  `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
+  Quill と `.ql-editor` が描画され、それ以外は読み取り専用の HTML。一度に開ける
+  エディタは高々1つ(`IndexPage` の `editingDate`)で、今日は初期状態で開いている。
+  `save`/`queue`/`error`/`month` はいずれも今日だけを触るので、
+  `openEditor()`(既定引数が今日)は `aria-pressed` が既に `"true"` のまま
+  `.ql-editor` を待つだけで、トグルの `page.click()` 自体は通らない。
+  今日以外の日を実際にクリックでトグルする経路は `toggle` シナリオが受け持つ。
+- **`.save-status` は日ごとに出るので同時に複数存在しうる。** `IndexPage` は
+  `statuses`(日付キーの `Map`)を持ち、`DiaryEntry` は自分の日のエントリがあれば
+  それを、無ければ編集中のときだけ `idle` を出す(`DiaryList` の `statuses` prop
+  経由)。つまり「保存待ち/保存中/保存失敗/保存済みの日」+「編集中の日」の分だけ
+  `.save-status` が同時に並びうる。ドライバの `document.querySelector('.save-status')`
+  は DOM 順で最初の1つ(日付降順の先頭)を拾っているだけで、今日しか編集しない
+  既存シナリオではそれで足りている。特定の日を狙うときは
+  `.diary[data-date="YYYY/MM/DD"] .save-status` のように絞ること。
 - **Playwright 公式イメージにブラウザはあるが `playwright` パッケージは無い。**
   `/ms-playwright` に chromium 等は入っているのに `npm root -g` には playwright が
   無いので、`NODE_PATH=/work/var/driver/node_modules` で host 側に入れたものを渡している。
@@ -179,10 +208,6 @@ scaffold 時の雛形テストが、既に削除された `HelloWorld.vue` を�
 - **ESM の bare import は `NODE_PATH` を見ない。** そのため `driver.mjs` は
   `import ... from 'playwright'` ではなく `createRequire(import.meta.url)('playwright')`
   で読んでいる。ここを普通の import に「直す」と `ERR_MODULE_NOT_FOUND` で落ちる。
-- **`npm run lint` は通らない。** `eslint@9.33` に対して `@vue/cli-plugin-eslint@5.0.8`
-  が ESLint 8 で削除済みの API（`extensions`, `useEslintrc` 等）を渡すため、対象ファイルに
-  到達する前に `new ESLint()` で落ちる。無改変の magistra でも同じなので、自分の変更を
-  疑わなくてよい。`vue.config.js` の `lintOnSave: false` も同じ理由。
 - **client のビルドには先に server のビルドが要る。** client は共有型を
   `import * as protocol from 'server/protocol'` で参照し、これは server の
   `package.json` の `exports` 経由で `server/dist/protocol.d.ts` に解決される。
