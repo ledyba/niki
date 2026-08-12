@@ -9,6 +9,8 @@
 // https://github.com/surmon-china/vue-quill-editor
 import { defineComponent } from 'vue';
 import Quill, {type QuillOptions} from 'quill';
+import type {ToolbarConfig} from 'quill/modules/toolbar';
+import { isMobile } from '@/media';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
@@ -19,29 +21,64 @@ export interface EditorChangeEvent {
   text: string;
 }
 
-const defaultOptions: QuillOptions = {
-  theme: 'snow',
-  bounds: document.body,
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-      [{ 'script': 'sub' }, { 'script': 'super' }],
-      [{ 'indent': '-1' }, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean'],
-      ['link', 'image', 'video']
-    ]
-  },
-  placeholder: 'Insert text here ...',
-  readOnly: false
+// 広い画面用。全部盛り。
+const FULL_TOOLBAR: ToolbarConfig = [
+  ['bold', 'italic', 'underline', 'strike'],
+  ['blockquote', 'code-block'],
+  [{ 'header': 1 }, { 'header': 2 }],
+  [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+  [{ 'script': 'sub' }, { 'script': 'super' }],
+  [{ 'indent': '-1' }, { 'indent': '+1' }],
+  [{ 'direction': 'rtl' }],
+  [{ 'size': ['small', false, 'large', 'huge'] }],
+  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+  [{ 'color': [] }, { 'background': [] }],
+  [{ 'font': [] }],
+  [{ 'align': [] }],
+  ['clean'],
+  ['link', 'image', 'video']
+];
+
+// 狭い画面用。全部盛りのままだと6〜7行に折り返して画面をツールバーで埋めてしまうので、
+// 日記で実際に使うものだけ残す。落とすのは font / size / color / background / align /
+// direction(RTL) / script(上付き下付き) / indent / video と、見出しの1・2ボタン
+// (見出しはドロップダウン側に残るので機能自体は失われない)。
+const COMPACT_TOOLBAR: ToolbarConfig = [
+  ['bold', 'italic', 'underline', 'strike'],
+  [{ 'header': [1, 2, 3, false] }],
+  [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+  ['blockquote', 'code-block'],
+  ['link', 'image'],
+  ['clean']
+];
+
+/**
+ * 画面幅に応じたツールバー構成を返す。
+ *
+ * Quill 2 はツールバーの構成をインスタンス生成時にしか受け取らない。生成後に
+ * 差し替える API は無く(modules/toolbar にあるのは addHandler/attach/update だけ)、
+ * Quill 自体にも destroy が無い。したがって「CSS でボタンを隠す」のではなく
+ * 「渡す設定そのものを選ぶ」のが公開 API だけで完結する唯一のやり方になる。
+ * CSS で隠す方式は .ql-font などの内部クラス名に依存するぶん、Quill の更新で
+ * 静かに壊れる。
+ *
+ * 生成時にしか効かないので、境界をまたいだときはエディタごと作り直す必要がある。
+ * それは DiaryEntry 側が :key で面倒を見ている。
+ */
+export function toolbarConfig(compact: boolean): ToolbarConfig {
+  return compact ? COMPACT_TOOLBAR : FULL_TOOLBAR;
+}
+
+function buildOptions(compact: boolean): QuillOptions {
+  return {
+    theme: 'snow',
+    bounds: document.body,
+    modules: {
+      toolbar: toolbarConfig(compact),
+    },
+    placeholder: 'Insert text here ...',
+    readOnly: false
+  };
 }
 
 const DiaryEditor = defineComponent({
@@ -93,7 +130,8 @@ const DiaryEditor = defineComponent({
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
         // Instance
-        this.quill = new Quill(this.$refs.editor as HTMLElement, defaultOptions);
+        // ツールバーはここで確定する。以降は差し替えられない (toolbarConfig の注記参照)。
+        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(isMobile.value));
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus

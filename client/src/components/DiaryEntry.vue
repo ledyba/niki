@@ -14,12 +14,13 @@
     <template v-if="editing">
       <DiaryEditor
           ref="quillEditor"
+          v-bind:key="editorKey"
           v-bind:content="diary.text"
           v-bind:focused="editing"
           v-on:change="onEditorChange($event)"
       />
     </template>
-    <div v-else-if="diary.text" v-html="diary.text" />
+    <div v-else-if="diary.text" class="diary__body" v-html="diary.text" />
     <div v-else class="diary__empty">（まだ書かれていません）</div>
     <SaveStatusIndicator v-if="status" v-bind:status="status" />
   </div>
@@ -32,6 +33,7 @@ import type * as protocol from 'server/protocol';
 import DiaryEditor, {type EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import SaveStatusIndicator, {type SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import { formatDate } from '@/calendar';
+import { isMobile } from '@/media';
 
 const DiaryEntry = defineComponent({
   components: {
@@ -80,6 +82,13 @@ const DiaryEntry = defineComponent({
       // 編集中は場所を確保しておく(indicator が出たり消えたりでガタつかないように)。
       return this.editing ? { kind: 'idle', message: '' } : null;
     },
+    // Quill はツールバーの構成を生成時にしか受け取らない (DiaryEditor の
+    // toolbarConfig の注記参照)。端末の回転などで画面幅が境界をまたいだら、
+    // key を変えてエディタごと作り直す。本文は親 (IndexPage) が編集のたびに
+    // 持ち直しているので、作り直しても失われない。
+    editorKey: function (): string {
+      return isMobile.value ? 'narrow' : 'wide';
+    },
   },
   methods: {
     onEditorChange: function (change: EditorChangeEvent) {
@@ -106,6 +115,8 @@ export type { DiaryChangeEvent };
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <!-- FIXME: scoped not working well -->
 <style lang="scss">
+@use '../styles/breakpoints' as bp;
+
 img {
   max-width: 100%;
   height: auto;
@@ -142,5 +153,23 @@ img {
 .diary__empty {
   color: #9e9e9e;
   font-size: 0.9em;
+}
+
+@media (max-width: bp.$mobile-max) {
+  .diary__header {
+    // 見出しが大きいままだと日付とボタンで1行を使い切ってしまう。
+    font-size: 1.2em;
+  }
+  .diary__edit-toggle {
+    // 0.6em (h2 基準で約14px、押せる高さは20px強) では指で狙えない。
+    // 44px 相当まで広げる。
+    font-size: 0.8em;
+    padding: 0.5em 1em;
+    min-height: 2.75em;
+  }
+  // 貼り付けた表や長い URL で本文が横に飛び出さないようにする。
+  .ql-editor, .diary__body {
+    overflow-wrap: break-word;
+  }
 }
 </style>

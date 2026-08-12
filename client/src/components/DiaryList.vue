@@ -71,6 +71,8 @@ export type { DiaryChangeEvent };
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+@use '../styles/breakpoints' as bp;
+
 .diary-list {
   overflow-y: auto;
   overflow-x: hidden;
@@ -78,5 +80,15 @@ export type { DiaryChangeEvent };
 }
 .diary:not(:last-child) {
   margin-bottom: 1em;
+}
+
+@media (max-width: bp.$mobile-max) {
+  .diary-list {
+    // IndexPage 側で高さの固定をやめている(ページ全体がスクロールする)ので、
+    // ここで入れ子のスクロール枠を作らない。
+    overflow: visible;
+    // 狭い画面では余白より本文の幅を優先する。
+    padding: 0.8em 0.6em;
+  }
 }
 </style>
