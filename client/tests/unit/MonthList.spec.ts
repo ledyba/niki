@@ -53,6 +53,18 @@ describe('MonthList.vue: 狭い画面向けの折りたたみ', () => {
     expect(wrapper.get('.month__toggle').text()).toContain('2026/07')
   })
 
+  it('いま見ている月のタイルを押しても畳む(vue-router が遷移を中断して path が変わらない)', async () => {
+    const { wrapper } = mountAt('/2026/08')
+    await wrapper.get('.month__toggle').trigger('click')
+    expect(wrapper.get('.month__items').classes()).toContain('month__items--open')
+
+    // ハイライトされている今月のタイルを押す。重複ナビゲーションなので
+    // route.path は変わらない = watch は発火しない。
+    await wrapper.findAll('a')[0].trigger('click')
+
+    expect(wrapper.get('.month__items').classes()).not.toContain('month__items--open')
+  })
+
   it('一覧に無い月を開いていてもトグルにその月を出す', () => {
     // buildMonths の範囲外(未来の月など)を直接開いたケース。
     const { wrapper } = mountAt('/2027/01')

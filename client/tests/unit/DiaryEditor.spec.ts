@@ -1,46 +1,62 @@
-import { describe, it, expect } from 'vitest'
-import { toolbarConfig } from '@/components/DiaryEditor.vue'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import Quill from 'quill'
+import DiaryEditor from '@/components/DiaryEditor.vue'
 
-// Quill 2 はツールバーの構成をインスタンス生成時にしか受け取らない。後から差し替える
-// API も destroy も無いので、狭い画面向けに絞るには「生成時に渡す設定を選ぶ」しかない。
-// CSS で .ql-font などを隠す実装に戻すと Quill の内部クラス名に依存して静かに壊れるので、
-// 設定側で絞れていることをここで固定しておく。
-function formatsOf(config: ReturnType<typeof toolbarConfig>): Array<string> {
-  const formats: Array<string> = []
-  for (const group of config) {
-    for (const control of group) {
-      if (typeof control === 'string') {
-        formats.push(control)
-      } else {
-        formats.push(...Object.keys(control))
-      }
-    }
-  }
-  return formats
+// ツールバーは Quill に生成させず、DiaryEditor のテンプレートが持つマークアップを
+// modules.toolbar.container として渡している。この形は「静かに効かなくなる」壊れ方を
+// する: Toolbar#attach は class から 'ql-' 始まりの名前を拾って書式を決め、
+// 知らない書式なら debug.warn(既定で出ない)して黙って戻る。つまり class 名を打ち
+// 間違えたボタンは、見た目はそのまま並ぶのに押しても何も起きない。
+//
+// なので「ボタンが在るか」ではなく「Quill に紐付いたか」を見る。Toolbar#controls は
+// attach に成功したものだけが入る。
+function attachedFormats(vm: unknown): Array<string> {
+  const quill = (vm as { quill: Quill }).quill
+  const toolbar = quill.getModule('toolbar') as { controls: Array<[string, HTMLElement]> }
+  return toolbar.controls.map(([format]) => format)
 }
 
-describe('DiaryEditor.vue: 画面幅ごとのツールバー構成', () => {
-  it('狭い画面では、折り返して画面を埋めてしまう重いボタンを外す', () => {
-    const compact = formatsOf(toolbarConfig(true))
-    // 日記では使わないものを落とす。ここに挙げたものが復活すると
-    // スマホでツールバーが何行にも折り返す。
-    for (const dropped of ['font', 'size', 'color', 'background', 'align', 'direction', 'script', 'indent', 'video']) {
-      expect(compact).not.toContain(dropped)
+describe('DiaryEditor.vue: 自前ツールバーの配線', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function mountEditor() {
+    // focused な DiaryEditor は mounted() で quill.focus() を呼ぶが、jsdom には
+    // 選択範囲が無く落ちる。ここでは配線だけを見るので黙らせる。
+    vi.spyOn(Quill.prototype, 'focus').mockImplementation(() => {})
+    return mount(DiaryEditor, { props: { content: '' } })
+  }
+
+  it('マークアップに並べた書式が全て Quill に紐付く', () => {
+    const attached = attachedFormats(mountEditor().vm)
+    for (const format of [
+      // 狭い画面でも出すもの
+      'bold', 'italic', 'underline', 'strike',
+      'header', 'list', 'blockquote', 'code-block', 'link', 'image', 'clean',
+      // 広い画面だけのもの
+      'script', 'indent', 'direction', 'size', 'color', 'background', 'font', 'align', 'video',
+    ]) {
+      expect(attached).toContain(format)
     }
   })
 
-  it('狭い画面でも日記に要るものは残す', () => {
-    const compact = formatsOf(toolbarConfig(true))
-    for (const kept of ['bold', 'italic', 'underline', 'strike', 'header', 'list', 'blockquote', 'code-block', 'link', 'image', 'clean']) {
-      expect(compact).toContain(kept)
+  it('広い画面だけのボタンには専用のクラスが付いている(CSS で畳む対象)', () => {
+    const wrapper = mountEditor()
+    // 狭い画面で消すのは Quill の内部クラスではなく自分のクラス。ここが消えると
+    // メディアクエリの当て先が無くなり、スマホでツールバーが折り返して画面を占める。
+    const wide = wrapper.findAll('.editor-toolbar__wide')
+    expect(wide.length).toBeGreaterThan(0)
+    // 消える側に link/bold など日記で要るものが混ざっていないこと。
+    for (const group of wide) {
+      for (const kept of ['ql-bold', 'ql-italic', 'ql-underline', 'ql-strike', 'ql-list', 'ql-link', 'ql-image', 'ql-clean', 'ql-blockquote', 'ql-code-block']) {
+        expect(group.find('.' + kept).exists()).toBe(false)
+      }
     }
-  })
-
-  it('広い画面の構成は絞らない(狭い画面用より必ず多い)', () => {
-    const full = toolbarConfig(false)
-    const compact = toolbarConfig(true)
-    expect(formatsOf(full).length).toBeGreaterThan(formatsOf(compact).length)
-    // 行数(グループ数)も減っていること。折り返しの行数に効くのはこちら。
-    expect(full.length).toBeGreaterThan(compact.length)
+    // 見出しは「H1/H2 ボタンは畳むがドロップダウンは残す」ので、残る側にある。
+    const header = wrapper.find('select.ql-header')
+    expect(header.exists()).toBe(true)
+    expect(header.element.closest('.editor-toolbar__wide')).toBeNull()
   })
 })

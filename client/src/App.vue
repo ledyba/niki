@@ -41,6 +41,16 @@ body {
   }
 }
 
+// 月一覧の sticky ヘッダ (MonthList の .month, z-index: 10) は、スクロールすると
+// エディタの上に白帯として重なる。Quill のリンク入力ツールチップとドロップダウンは
+// position: absolute のまま z-index を持たず、祖先の .ql-container も
+// スタッキングコンテキストを作らないので、そのままでは帯の裏に隠れて押せない。
+// ここで帯より前に出しておく。
+.ql-snow .ql-tooltip,
+.ql-snow .ql-picker-options {
+  z-index: 20;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

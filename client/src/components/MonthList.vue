@@ -18,7 +18,16 @@
         id="month-list-items"
         class="month__items"
         v-bind:class="{ 'month__items--open': open }">
-      <router-link v-for="month in months" :key="month" v-bind:to="'/' + month">
+      <!--
+        畳むのは「押されたら」であって「ルートが変わったら」ではない。いま見ている
+        月のタイルを押した場合、vue-router は重複ナビゲーションを中断して path が
+        変わらないので、ルートの変化だけを見ていると開きっぱなしになる。
+      -->
+      <router-link
+          v-for="month in months"
+          :key="month"
+          v-bind:to="'/' + month"
+          v-on:click="open = false">
       <li v-bind:class="{ 'month__item--active': isActive(month) }">
         {{ month }}
       </li>
@@ -42,16 +51,16 @@ const MonthList = defineComponent({
     months: Array<string>,
   },
   computed: {
-    // 畳んでいる間に出す「いま見ている月」。ルートが '/YYYY/MM' なので
-    // 先頭の '/' を落とすだけでよい。months に無い月(未来の月を直接開いた等)でも
-    // ちゃんと出る。
+    // 畳んでいる間に出す「いま見ている月」。ルートは '/YYYY/MM' なので先頭の
+    // '/' を落とすだけでよい(vue-router の path は必ず '/' 始まり)。months に
+    // 無い月(未来の月を直接開いた等)でもそのまま出る。
     currentMonth: function (): string {
-      const path = this.$route.path ?? '';
-      return path.startsWith('/') ? path.slice(1) : path;
+      return this.$route.path.replace(/^\//, '');
     },
   },
   watch: {
-    // 月を選んだら畳む。開いたままだと本文が一覧に押し出されて見えない。
+    // 押されたときに畳むのが本筋(テンプレートの注記参照)だが、戻る/進むや
+    // アドレス直打ちで月が変わることもあるので、ここでも畳んでおく。
     '$route.path': function () {
       this.open = false;
     },
@@ -59,7 +68,7 @@ const MonthList = defineComponent({
   methods: {
     // いま見ている月かどうか。
     isActive: function (month: string): boolean {
-      return this.$route.path === '/' + month;
+      return month === this.currentMonth;
     },
   }
 });
@@ -154,7 +163,11 @@ a {
     gap: 0.5em;
     padding: 0 0.8em 0.8em;
     // 月が増えても画面を覆い尽くさないよう、ここだけはスクロールさせる。
+    // sticky な親が画面より高くなると下端に手が届かなくなるので、ページ側の
+    // スクロールには任せられない。iOS の vh はアドレスバー収納時基準なので
+    // 可視領域をはみ出す。対応していれば dvh を使う。
     max-height: 60vh;
+    max-height: 60dvh;
     overflow-y: auto;
   }
   .month__items--open li {

@@ -1,6 +1,74 @@
 <template>
   <div class="quill-editor">
-    <slot name="toolbar"></slot>
+    <!--
+      ツールバーは Quill に生成させず、自前のマークアップを渡す。
+      Quill は modules.toolbar.container に要素を渡すと、その中の button/select を
+      走査して ql- で始まるクラス名から書式を決め、アイコンの流し込みと
+      ドロップダウン化(空の select は既定値で埋まる)まで面倒を見てくれる。
+      こうしておくと「狭い画面で出さないボタン」を自分のクラス名で選べるので、
+      画面幅の判定を CSS のメディアクエリだけで完結できる。
+    -->
+    <div ref="toolbar" class="editor-toolbar">
+      <span class="ql-formats">
+        <button class="ql-bold"></button>
+        <button class="ql-italic"></button>
+        <button class="ql-underline"></button>
+        <button class="ql-strike"></button>
+      </span>
+      <span class="ql-formats">
+        <select class="ql-header"></select>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-list" value="ordered"></button>
+        <button class="ql-list" value="bullet"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-blockquote"></button>
+        <button class="ql-code-block"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-link"></button>
+        <button class="ql-image"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-clean"></button>
+      </span>
+      <!--
+        ここから下は広い画面だけ。日記ではまず使わないうえ、全部出すと
+        375px では6〜7行に折り返してツールバーが画面を占めてしまう。
+      -->
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-header" value="1"></button>
+        <button class="ql-header" value="2"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-script" value="sub"></button>
+        <button class="ql-script" value="super"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-indent" value="-1"></button>
+        <button class="ql-indent" value="+1"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-direction" value="rtl"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-size"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-color"></select>
+        <select class="ql-background"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-font"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-align"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-video"></button>
+      </span>
+    </div>
     <div ref="editor"></div>
   </div>
 </template>
@@ -9,8 +77,6 @@
 // https://github.com/surmon-china/vue-quill-editor
 import { defineComponent } from 'vue';
 import Quill, {type QuillOptions} from 'quill';
-import type {ToolbarConfig} from 'quill/modules/toolbar';
-import { isMobile } from '@/media';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
@@ -21,60 +87,31 @@ export interface EditorChangeEvent {
   text: string;
 }
 
-// 広い画面用。全部盛り。
-const FULL_TOOLBAR: ToolbarConfig = [
-  ['bold', 'italic', 'underline', 'strike'],
-  ['blockquote', 'code-block'],
-  [{ 'header': 1 }, { 'header': 2 }],
-  [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-  [{ 'script': 'sub' }, { 'script': 'super' }],
-  [{ 'indent': '-1' }, { 'indent': '+1' }],
-  [{ 'direction': 'rtl' }],
-  [{ 'size': ['small', false, 'large', 'huge'] }],
-  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'font': [] }],
-  [{ 'align': [] }],
-  ['clean'],
-  ['link', 'image', 'video']
-];
-
-// 狭い画面用。全部盛りのままだと6〜7行に折り返して画面をツールバーで埋めてしまうので、
-// 日記で実際に使うものだけ残す。落とすのは font / size / color / background / align /
-// direction(RTL) / script(上付き下付き) / indent / video と、見出しの1・2ボタン
-// (見出しはドロップダウン側に残るので機能自体は失われない)。
-const COMPACT_TOOLBAR: ToolbarConfig = [
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ 'header': [1, 2, 3, false] }],
-  [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-  ['blockquote', 'code-block'],
-  ['link', 'image'],
-  ['clean']
-];
-
 /**
- * 画面幅に応じたツールバー構成を返す。
+ * Quill のオプション。ツールバーはテンプレート側の要素を渡す。
  *
- * Quill 2 はツールバーの構成をインスタンス生成時にしか受け取らない。生成後に
- * 差し替える API は無く(modules/toolbar にあるのは addHandler/attach/update だけ)、
- * Quill 自体にも destroy が無い。したがって「CSS でボタンを隠す」のではなく
- * 「渡す設定そのものを選ぶ」のが公開 API だけで完結する唯一のやり方になる。
- * CSS で隠す方式は .ql-font などの内部クラス名に依存するぶん、Quill の更新で
- * 静かに壊れる。
+ * Quill 2 は modules.toolbar.container に HTMLElement を受け取れる
+ * (modules/toolbar.d.ts: `container?: HTMLElement | ToolbarConfig | null`)。
+ * 要素を渡すと、その中の button/select を走査し ql- で始まるクラス名から書式を
+ * 決めて紐付ける (Toolbar#attach)。アイコンの流し込みと select のドロップダウン化は
+ * snow テーマの extendToolbar がやるので、空の <select class="ql-header"> でも
+ * 既定の項目で埋まる。
  *
- * 生成時にしか効かないので、境界をまたいだときはエディタごと作り直す必要がある。
- * それは DiaryEntry 側が :key で面倒を見ている。
+ * 構成の配列を渡す形だと、ツールバーは生成時にしか決まらない (後から差し替える API も
+ * Quill#destroy も無い) ため、画面幅で出し分けるにはエディタごと作り直すしかない。
+ * 要素を渡す形なら出し分けは自分のクラス名 (editor-toolbar__wide) への
+ * メディアクエリで済み、幅の判定が JS 側に一切要らない。日本語入力の変換中に
+ * 作り直して変換中の文字を失う、といった事故も起きない。
  */
-export function toolbarConfig(compact: boolean): ToolbarConfig {
-  return compact ? COMPACT_TOOLBAR : FULL_TOOLBAR;
-}
-
-function buildOptions(compact: boolean): QuillOptions {
+function buildOptions(toolbar: HTMLElement): QuillOptions {
   return {
     theme: 'snow',
     bounds: document.body,
     modules: {
-      toolbar: toolbarConfig(compact),
+      // 要素であることが明らかな形で渡す。snow テーマは
+      // `options.modules.toolbar.container == null` のとき既定の構成で
+      // 上書きしてくるので、container を明示しておく。
+      toolbar: { container: toolbar },
     },
     placeholder: 'Insert text here ...',
     readOnly: false
@@ -130,8 +167,7 @@ const DiaryEditor = defineComponent({
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
         // Instance
-        // ツールバーはここで確定する。以降は差し替えられない (toolbarConfig の注記参照)。
-        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(isMobile.value));
+        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement));
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
@@ -212,4 +248,13 @@ export default DiaryEditor;
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+@use '../styles/breakpoints' as bp;
+
+@media (max-width: bp.$mobile-max) {
+  // 狭い画面では日記に要るものだけ残す。ツールバーの中身は自前のマークアップなので、
+  // ここで見ているのは Quill の内部クラス名ではなく自分のクラス名。
+  .editor-toolbar__wide {
+    display: none;
+  }
+}
 </style>

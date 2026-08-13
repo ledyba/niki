@@ -13,8 +13,6 @@
     </h2>
     <template v-if="editing">
       <DiaryEditor
-          ref="quillEditor"
-          v-bind:key="editorKey"
           v-bind:content="diary.text"
           v-bind:focused="editing"
           v-on:change="onEditorChange($event)"
@@ -33,7 +31,6 @@ import type * as protocol from 'server/protocol';
 import DiaryEditor, {type EditorChangeEvent} from '@/components/DiaryEditor.vue'
 import SaveStatusIndicator, {type SaveStatus} from '@/components/SaveStatusIndicator.vue'
 import { formatDate } from '@/calendar';
-import { isMobile } from '@/media';
 
 const DiaryEntry = defineComponent({
   components: {
@@ -82,13 +79,6 @@ const DiaryEntry = defineComponent({
       // 編集中は場所を確保しておく(indicator が出たり消えたりでガタつかないように)。
       return this.editing ? { kind: 'idle', message: '' } : null;
     },
-    // Quill はツールバーの構成を生成時にしか受け取らない (DiaryEditor の
-    // toolbarConfig の注記参照)。端末の回転などで画面幅が境界をまたいだら、
-    // key を変えてエディタごと作り直す。本文は親 (IndexPage) が編集のたびに
-    // 持ち直しているので、作り直しても失われない。
-    editorKey: function (): string {
-      return isMobile.value ? 'narrow' : 'wide';
-    },
   },
   methods: {
     onEditorChange: function (change: EditorChangeEvent) {
@@ -120,6 +110,16 @@ export type { DiaryChangeEvent };
 img {
   max-width: 100%;
   height: auto;
+}
+
+.diary__body {
+  // 長い URL は折り返す。折り返せないもの(貼り付けた表や幅広の <pre>)は
+  // ページごと横に広げるのではなく、この本文の中だけで横スクロールさせる。
+  // 月一覧の sticky は縦方向にしか効かないので、ページが横に流れると
+  // 操作系ごと画面外へ出てしまう。
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .diary__header {
@@ -162,14 +162,11 @@ img {
   }
   .diary__edit-toggle {
     // 0.6em (h2 基準で約14px、押せる高さは20px強) では指で狙えない。
-    // 44px 相当まで広げる。
-    font-size: 0.8em;
+    // 44px まで広げる。em は h2 の font-size に乗るので、狙った値をそのまま
+    // 書ける rem を使う (月一覧のタイルとも揃う)。
+    font-size: 0.9rem;
     padding: 0.5em 1em;
-    min-height: 2.75em;
-  }
-  // 貼り付けた表や長い URL で本文が横に飛び出さないようにする。
-  .ql-editor, .diary__body {
-    overflow-wrap: break-word;
+    min-height: 2.75rem;
   }
 }
 </style>
