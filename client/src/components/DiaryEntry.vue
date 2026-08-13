@@ -18,7 +18,20 @@
           v-on:change="onEditorChange($event)"
       />
     </template>
-    <div v-else-if="diary.text" class="diary__body" v-html="diary.text" />
+    <!--
+      表示側にも Quill と同じクラスを着せる。Quill は箇条書きの階層を <ol> の
+      入れ子ではなく <li> の data-list 属性と ql-indent-N クラスで表し、字下げも
+      行頭のマーカーも .ql-editor 配下の CSS でしか描かない (マーカーの実体は
+      li > .ql-ui::before の content)。素の HTML として出すと階層が消えるうえ、
+      中身は常に <ol> なので箇条書きまで「1. 2. 3.」の連番になる。
+
+      入れ子にしてあるのは、引用・コードブロック・見出しの体裁が
+      `.ql-snow .ql-editor blockquote` のように「祖先の .ql-snow」を要求するため。
+      1枚の div に両方のクラスを付けても子孫セレクタには一致しない。
+    -->
+    <div v-else-if="diary.text" class="diary__body ql-snow">
+      <div class="ql-editor" v-html="diary.text" />
+    </div>
     <div v-else class="diary__empty">（まだ書かれていません）</div>
     <SaveStatusIndicator v-if="status" v-bind:status="status" />
   </div>
@@ -115,6 +128,22 @@ img {
 .diary__body {
   // 長い URL は折り返す。
   overflow-wrap: break-word;
+}
+
+// ql-editor はエディタの「枠」の分の指定も持っている。表示側では要らないので
+// 打ち消す。詳細度を .diary__body > .ql-editor で上げてあるのは、quill.core.css の
+// .ql-editor と同点にして出力順に賭けないため (CSS の import 位置を動かしただけで
+// 黙って戻る、という壊れ方をする)。
+.diary__body > .ql-editor {
+  height: auto;
+  padding: 0;
+  // 縦のスクロール枠は .diary-list 側が持つ。ここで auto にすると、
+  // 日ごとに独立したスクロール枠ができてしまう。
+  overflow-y: visible;
+  // 入力欄ではないので、文字カーソルは出さない (.ql-editor > * の打ち消し)。
+  > * {
+    cursor: auto;
+  }
 }
 
 .diary__header {
