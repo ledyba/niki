@@ -291,6 +291,8 @@ const IndexPage = defineComponent({
 export default IndexPage;
 </script>
 <style scoped lang="scss">
+@use '../styles/breakpoints' as bp;
+
 .home {
   display: flex;
   flex-direction: row;
@@ -313,5 +315,25 @@ export default IndexPage;
 }
 .home > .texts {
   flex-grow: 1;
+}
+
+@media (max-width: bp.$mobile-max) {
+  .home {
+    // 横並びをやめて縦に積む。月一覧が横幅を取り続けると本文が潰れるので、
+    // 上に畳んだ月一覧、下に本文、という順にする。
+    flex-direction: column;
+    // 高さを 100% に固定すると、中の月一覧と本文がそれぞれ独立したスクロール枠に
+    // なる。スマホだとアドレスバーの伸縮や慣性スクロールと噛み合わないので、
+    // ページ全体を普通にスクロールさせる。
+    height: auto;
+    min-height: 100%;
+    // 画面幅いっぱいに使うので左右の枠線は引かない。
+    border-left: none;
+    border-right: none;
+  }
+  .home > .month-list {
+    border-right: none;
+    border-bottom: #2c3e50 1px solid;
+  }
 }
 </style>

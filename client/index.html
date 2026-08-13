@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="ja" style="margin: 0; padding: 0; width: 100%; height: 100%;">
+<!-- html/body の余白や高さは App.vue のスタイルで持つ。インラインの style 属性だと
+     メディアクエリで上書きできず、狭い画面で余白を詰められないため。 -->
+<html lang="ja">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="/favicon.ico">
     <title>niki</title>
   </head>
-  <body style="margin: 0; padding: 0.5em; width: 100%; height: 100%; box-sizing: border-box;">
+  <body>
     <noscript>
       <strong>We're sorry but niki doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>

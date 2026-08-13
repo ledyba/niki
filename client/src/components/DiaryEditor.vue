@@ -1,6 +1,80 @@
 <template>
   <div class="quill-editor">
-    <slot name="toolbar"></slot>
+    <!--
+      ツールバーは Quill に生成させず、自前のマークアップを渡す。
+      Quill は modules.toolbar.container に要素を渡すと、その中の button/select を
+      走査して ql- で始まるクラス名から書式を決め、アイコンの流し込みと
+      ドロップダウン化(空の select は既定値で埋まる)まで面倒を見てくれる。
+      こうしておくと「狭い画面で出さないボタン」を自分のクラス名で選べるので、
+      画面幅の判定を CSS のメディアクエリだけで完結できる。
+    -->
+    <!--
+      role="toolbar" は自分で付ける。Quill が付けてくれるのは配列から自分で
+      組み立てたときだけで (Toolbar のコンストラクタの Array 分岐)、要素を
+      渡す経路では触られない。
+    -->
+    <div ref="toolbar" class="editor-toolbar" role="toolbar">
+
+      <span class="ql-formats">
+        <button class="ql-bold"></button>
+        <button class="ql-italic"></button>
+        <button class="ql-underline"></button>
+        <button class="ql-strike"></button>
+      </span>
+      <span class="ql-formats">
+        <select class="ql-header"></select>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-list" value="ordered"></button>
+        <button class="ql-list" value="bullet"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-blockquote"></button>
+        <button class="ql-code-block"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-link"></button>
+        <button class="ql-image"></button>
+      </span>
+      <span class="ql-formats">
+        <button class="ql-clean"></button>
+      </span>
+      <!--
+        ここから下は広い画面だけ。日記ではまず使わないうえ、全部出すと
+        375px では6〜7行に折り返してツールバーが画面を占めてしまう。
+      -->
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-header" value="1"></button>
+        <button class="ql-header" value="2"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-script" value="sub"></button>
+        <button class="ql-script" value="super"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-indent" value="-1"></button>
+        <button class="ql-indent" value="+1"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-direction" value="rtl"></button>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-size"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-color"></select>
+        <select class="ql-background"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-font"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <select class="ql-align"></select>
+      </span>
+      <span class="ql-formats editor-toolbar__wide">
+        <button class="ql-video"></button>
+      </span>
+    </div>
     <div ref="editor"></div>
   </div>
 </template>
@@ -19,29 +93,40 @@ export interface EditorChangeEvent {
   text: string;
 }
 
-const defaultOptions: QuillOptions = {
-  theme: 'snow',
-  bounds: document.body,
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-      [{ 'script': 'sub' }, { 'script': 'super' }],
-      [{ 'indent': '-1' }, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean'],
-      ['link', 'image', 'video']
-    ]
-  },
-  placeholder: 'Insert text here ...',
-  readOnly: false
+/**
+ * Quill のオプション。ツールバーはテンプレート側の要素を渡す。
+ *
+ * Quill 2 は modules.toolbar.container に HTMLElement を受け取れる
+ * (modules/toolbar.d.ts: `container?: HTMLElement | ToolbarConfig | null`)。
+ * 要素を渡すと、その中の button/select を走査し ql- で始まるクラス名から書式を
+ * 決めて紐付ける (Toolbar#attach)。アイコンの流し込みと select のドロップダウン化は
+ * snow テーマの extendToolbar がやるので、空の <select class="ql-header"> でも
+ * 既定の項目で埋まる。
+ *
+ * 構成の配列を渡す形だと、ツールバーは生成時にしか決まらない (後から差し替える API も
+ * Quill#destroy も無い) ため、画面幅で出し分けるにはエディタごと作り直すしかない。
+ * 要素を渡す形なら出し分けは自分のクラス名 (editor-toolbar__wide) への
+ * メディアクエリで済み、幅の判定が JS 側に一切要らない。日本語入力の変換中に
+ * 作り直して変換中の文字を失う、といった事故も起きない。
+ */
+function buildOptions(toolbar: HTMLElement, bounds: HTMLElement): QuillOptions {
+  return {
+    theme: 'snow',
+    // リンク入力のツールチップはこの範囲に収まるよう位置を決める。document.body を
+    // 渡すと、body が height:100% のままページ全体がスクロールする狭い画面では
+    // body の矩形がスクロールぶん上へずれ続け、ツールチップが常に「はみ出す」と
+    // 判定されて毎回上向きに反転する。エディタ自身を渡せばスクロールしても
+    // ずれない。
+    bounds: bounds,
+    modules: {
+      // 要素であることが明らかな形で渡す。snow テーマは
+      // `options.modules.toolbar.container == null` のとき既定の構成で
+      // 上書きしてくるので、container を明示しておく。
+      toolbar: { container: toolbar },
+    },
+    placeholder: 'Insert text here ...',
+    readOnly: false
+  };
 }
 
 const DiaryEditor = defineComponent({
@@ -93,7 +178,7 @@ const DiaryEditor = defineComponent({
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
         // Instance
-        this.quill = new Quill(this.$refs.editor as HTMLElement, defaultOptions);
+        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement, this.$el as HTMLElement));
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
@@ -174,4 +259,18 @@ export default DiaryEditor;
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+@use '../styles/breakpoints' as bp;
+
+@media (max-width: bp.$mobile-max) {
+  // 狭い画面では日記に要るものだけ残す。ツールバーの中身は自前のマークアップなので、
+  // ここで見ているのは Quill の内部クラス名ではなく自分のクラス名。
+  //
+  // 親を挟んで詳細度を上げてあるのは、Quill の
+  // `.ql-snow .ql-formats { display: inline-block }` と張り合うため。
+  // 同点だと出力順で決まってしまい、quill.snow.css の import を別ファイルに
+  // 移すといったよくある整理で、この間引きが黙って効かなくなる。
+  .editor-toolbar .editor-toolbar__wide {
+    display: none;
+  }
+}
 </style>

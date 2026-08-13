@@ -13,13 +13,12 @@
     </h2>
     <template v-if="editing">
       <DiaryEditor
-          ref="quillEditor"
           v-bind:content="diary.text"
           v-bind:focused="editing"
           v-on:change="onEditorChange($event)"
       />
     </template>
-    <div v-else-if="diary.text" v-html="diary.text" />
+    <div v-else-if="diary.text" class="diary__body" v-html="diary.text" />
     <div v-else class="diary__empty">（まだ書かれていません）</div>
     <SaveStatusIndicator v-if="status" v-bind:status="status" />
   </div>
@@ -106,9 +105,16 @@ export type { DiaryChangeEvent };
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <!-- FIXME: scoped not working well -->
 <style lang="scss">
+@use '../styles/breakpoints' as bp;
+
 img {
   max-width: 100%;
   height: auto;
+}
+
+.diary__body {
+  // 長い URL は折り返す。
+  overflow-wrap: break-word;
 }
 
 .diary__header {
@@ -142,5 +148,32 @@ img {
 .diary__empty {
   color: #9e9e9e;
   font-size: 0.9em;
+}
+
+@media (max-width: bp.$mobile-max) {
+  .diary__header {
+    // 見出しが大きいままだと日付とボタンで1行を使い切ってしまう。
+    font-size: 1.2em;
+    // 44px のボタンをベースライン揃えのままにすると、日付の文字の下に
+    // ぶら下がって行が伸びる。狭い画面では上下中央で揃える。
+    align-items: center;
+  }
+  .diary__body {
+    // 折り返せないもの(貼り付けた表や幅広の <pre>)は、ページごと横に広げず
+    // 本文の中だけで横スクロールさせる。月一覧の sticky は縦方向にしか
+    // 効かないので、ページが横に流れると操作系ごと画面外へ出てしまう。
+    // (縦は overflow が auto に計算されるが、高さは内容なりなので実際には
+    // スクロールしない。デスクトップでは .diary-list 側が横をクリップする
+    // ので、ここは狭い画面だけでよい。)
+    overflow-x: auto;
+  }
+  .diary__edit-toggle {
+    // 0.6em (h2 基準で約14px、押せる高さは20px強) では指で狙えない。
+    // 44px まで広げる。em は h2 の font-size に乗るので、狙った値をそのまま
+    // 書ける rem を使う (月一覧のタイルとも揃う)。
+    font-size: 0.9rem;
+    padding: 0.5em 1em;
+    min-height: 2.75rem;
+  }
 }
 </style>

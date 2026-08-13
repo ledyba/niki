@@ -71,6 +71,8 @@ export type { DiaryChangeEvent };
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+@use '../styles/breakpoints' as bp;
+
 .diary-list {
   overflow-y: auto;
   overflow-x: hidden;
@@ -78,5 +80,22 @@ export type { DiaryChangeEvent };
 }
 .diary:not(:last-child) {
   margin-bottom: 1em;
+}
+
+@media (max-width: bp.$mobile-max) {
+  .diary-list {
+    // IndexPage 側で高さの固定をやめている(ページ全体がスクロールする)ので、
+    // 縦のスクロール枠は作らない。
+    //
+    // 横は塞いだままにする。visible にすると overflow-x: hidden まで一緒に
+    // 落ちてしまい、何かがはみ出したときページごと横に流れる。月一覧の
+    // sticky は縦にしか効かないので、そうなると月トグルと編集ボタンが
+    // 画面の外へ出ていく。hidden ではなく clip なのは、hidden だと縦も
+    // auto に計算されてスクロール枠に戻ってしまうため。
+    overflow-y: visible;
+    overflow-x: clip;
+    // 狭い画面では余白より本文の幅を優先する。
+    padding: 0.8em 0.6em;
+  }
 }
 </style>

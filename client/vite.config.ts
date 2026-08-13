@@ -15,6 +15,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // 既定 (baseline-widely-available) だと minifier が
+    // `@media (max-width: 48em)` を Media Queries Level 4 の range 構文
+    // `@media (width<=48em)` に書き換える。range 構文を解釈できないエンジン
+    // (iOS 16.4 未満など) は at-rule ごと中身を捨てるので、狭い画面向けの
+    // 指定が丸ごと効かなくなる。CSS だけ古い記法に留める。
+    cssTarget: 'safari16',
   },
   server: {
     // vite の dev server 単体では API が無いので、server (localhost:3000) へ回す。
