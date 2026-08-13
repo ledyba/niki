@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Quill from 'quill'
 import DiaryEditor from '@/components/DiaryEditor.vue'
@@ -18,15 +18,21 @@ function attachedFormats(vm: unknown): Array<string> {
 }
 
 describe('DiaryEditor.vue: 自前ツールバーの配線', () => {
+  // Quill は document に selection-change のリスナを張るので、放置すると
+  // インスタンスがテストファイルの最後まで生き残る。
+  const mounted: Array<{ unmount: () => void }> = []
   afterEach(() => {
-    vi.restoreAllMocks()
+    while (mounted.length > 0) {
+      mounted.pop()?.unmount()
+    }
   })
 
   function mountEditor() {
-    // focused な DiaryEditor は mounted() で quill.focus() を呼ぶが、jsdom には
-    // 選択範囲が無く落ちる。ここでは配線だけを見るので黙らせる。
-    vi.spyOn(Quill.prototype, 'focus').mockImplementation(() => {})
-    return mount(DiaryEditor, { props: { content: '' } })
+    // focused は既定の false のまま。mounted() の focus 経路は通らないので、
+    // jsdom で落ちる quill.focus() を差し替える必要はない。
+    const wrapper = mount(DiaryEditor, { props: { content: '' } })
+    mounted.push(wrapper)
+    return wrapper
   }
 
   it('マークアップに並べた書式が全て Quill に紐付く', () => {

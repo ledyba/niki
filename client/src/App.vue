@@ -42,12 +42,22 @@ body {
 }
 
 // 月一覧の sticky ヘッダ (MonthList の .month, z-index: 10) は、スクロールすると
-// エディタの上に白帯として重なる。Quill のリンク入力ツールチップとドロップダウンは
-// position: absolute のまま z-index を持たず、祖先の .ql-container も
-// スタッキングコンテキストを作らないので、そのままでは帯の裏に隠れて押せない。
-// ここで帯より前に出しておく。
-.ql-snow .ql-tooltip,
-.ql-snow .ql-picker-options {
+// エディタの上に白帯として重なる。Quill のリンク入力ツールチップと
+// ドロップダウンはそのままだと帯の裏に隠れて押せないので、前に出しておく。
+// 祖先の .ql-container は position:relative だが z-index:auto で
+// スタッキングコンテキストを作らないため、ここでの指定がそのまま効く。
+
+// ツールチップ側は Quill が z-index を持たないので、これだけで足りる。
+.ql-snow .ql-tooltip {
+  z-index: 20;
+}
+
+// ドロップダウン側は事情が違う。Quill 自身が
+// `.ql-snow .ql-picker.ql-expanded .ql-picker-options { z-index: 1 }` を
+// 持っていて、しかも「開いている間」に効くのはそちら。詳細度で上回らないと
+// 負けるので、セレクタを合わせたうえで .ql-toolbar を足して確実に勝たせる
+// (同点にして出力順に賭けると、CSS の import 位置を動かしただけで黙って戻る)。
+.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-options {
   z-index: 20;
 }
 

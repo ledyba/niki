@@ -8,7 +8,13 @@
       こうしておくと「狭い画面で出さないボタン」を自分のクラス名で選べるので、
       画面幅の判定を CSS のメディアクエリだけで完結できる。
     -->
-    <div ref="toolbar" class="editor-toolbar">
+    <!--
+      role="toolbar" は自分で付ける。Quill が付けてくれるのは配列から自分で
+      組み立てたときだけで (Toolbar のコンストラクタの Array 分岐)、要素を
+      渡す経路では触られない。
+    -->
+    <div ref="toolbar" class="editor-toolbar" role="toolbar">
+
       <span class="ql-formats">
         <button class="ql-bold"></button>
         <button class="ql-italic"></button>
@@ -103,10 +109,15 @@ export interface EditorChangeEvent {
  * メディアクエリで済み、幅の判定が JS 側に一切要らない。日本語入力の変換中に
  * 作り直して変換中の文字を失う、といった事故も起きない。
  */
-function buildOptions(toolbar: HTMLElement): QuillOptions {
+function buildOptions(toolbar: HTMLElement, bounds: HTMLElement): QuillOptions {
   return {
     theme: 'snow',
-    bounds: document.body,
+    // リンク入力のツールチップはこの範囲に収まるよう位置を決める。document.body を
+    // 渡すと、body が height:100% のままページ全体がスクロールする狭い画面では
+    // body の矩形がスクロールぶん上へずれ続け、ツールチップが常に「はみ出す」と
+    // 判定されて毎回上向きに反転する。エディタ自身を渡せばスクロールしても
+    // ずれない。
+    bounds: bounds,
     modules: {
       // 要素であることが明らかな形で渡す。snow テーマは
       // `options.modules.toolbar.container == null` のとき既定の構成で
@@ -167,7 +178,7 @@ const DiaryEditor = defineComponent({
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
         // Instance
-        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement));
+        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement, this.$el as HTMLElement));
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
@@ -253,7 +264,12 @@ export default DiaryEditor;
 @media (max-width: bp.$mobile-max) {
   // 狭い画面では日記に要るものだけ残す。ツールバーの中身は自前のマークアップなので、
   // ここで見ているのは Quill の内部クラス名ではなく自分のクラス名。
-  .editor-toolbar__wide {
+  //
+  // 親を挟んで詳細度を上げてあるのは、Quill の
+  // `.ql-snow .ql-formats { display: inline-block }` と張り合うため。
+  // 同点だと出力順で決まってしまい、quill.snow.css の import を別ファイルに
+  // 移すといったよくある整理で、この間引きが黙って効かなくなる。
+  .editor-toolbar .editor-toolbar__wide {
     display: none;
   }
 }
