@@ -181,12 +181,20 @@ cd client && npm run test:unit        # vitest run
   すべて古い記述で実体と合っていない。
 - **どの日も編集できる／編集モードは日ごとのトグル。** `DiaryEntry.vue` は
   `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
-  Quill と `.ql-editor` が描画され、それ以外は読み取り専用の HTML。一度に開ける
+  Quill が描画され(`DiaryEditor` のルート = `.quill-editor`)、それ以外は
+  読み取り専用の HTML。一度に開ける
   エディタは高々1つ(`IndexPage` の `editingDate`)で、今日は初期状態で開いている。
   `save`/`queue`/`error`/`month` はいずれも今日だけを触るので、
   `openEditor()`(既定引数が今日)は `aria-pressed` が既に `"true"` のまま
-  `.ql-editor` を待つだけで、トグルの `page.click()` 自体は通らない。
+  エディタを待つだけで、トグルの `page.click()` 自体は通らない。
   今日以外の日を実際にクリックでトグルする経路は `toggle` シナリオが受け持つ。
+- **`.ql-editor` はエディタの目印にならない。** 読み取り専用の本文
+  (`.diary__body`)も `.ql-snow > .ql-editor` の入れ子で描かれる。Quill は
+  箇条書きの階層を `<li>` の `data-list` と `ql-indent-N` で表し、字下げも
+  行頭マーカーも `.ql-editor` 配下の CSS でしか描かないので、表示側も同じ
+  クラスを着せている。ドライバでエディタを指すときは `.quill-editor`
+  (`DiaryEditor` のルート)で絞ること。`.ql-editor` だけで待つと、
+  閉じたはずのエディタが「まだある」ように見える。
 - **`.save-status` は日ごとに出るので同時に複数存在しうる。** `IndexPage` は
   `statuses`(日付キーの `Map`)を持ち、`DiaryEntry` は自分の日のエントリがあれば
   それを、無ければ編集中のときだけ `idle` を出す(`DiaryList` の `statuses` prop
@@ -240,6 +248,6 @@ cd client && npm run test:unit        # vitest run
 - **`error while loading shared libraries: libatk-1.0.so.0`**: ホストで直接
   Playwright の Chromium を起動しようとしている。ホストには依存ライブラリが無く
   パスワード無し `sudo` も通らない。必ずコンテナ経由で走らせる。
-- **ドライバが `.ql-editor` の待機でタイムアウトする**: サーバが上がっていないか、
+- **ドライバが `.quill-editor` の待機でタイムアウトする**: サーバが上がっていないか、
   `client/dist` が未ビルド。`curl http://127.0.0.1:3000/` と `/tmp/niki-server.log` を見る。
 - **`month` シナリオだけ落ちる**: 今月以外の月のデータが無い。上記の `INSERT` を流す。

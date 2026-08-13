@@ -194,6 +194,13 @@ const DiaryEditor = defineComponent({
           if(this.quill === null) {
             return;
           }
+          // TODO: ここで取っているのは Quill の内部表現であって、単体で成立する
+          // HTML ではない。箇条書きの階層は <ol> の入れ子ではなく <li> の
+          // data-list 属性と ql-indent-N クラスで表され、行頭のマーカーに至っては
+          // .ql-editor 配下の CSS が描いている。つまり保存した HTML は Quill の
+          // CSS 無しには正しく表示できない (表示側は同じクラスを着せて凌いでいる)。
+          // 外に出す (エクスポート等) なら quill.getSemanticHTML() を検討する。
+          // https://code.ledyba.org/ledyba/niki/issues/14
           let html = (this.$refs.editor as HTMLElement).children[0].innerHTML;
           const quill = this.quill as Quill;
           const text = this.quill.getText();

@@ -108,11 +108,13 @@ async function openEditor(page, date = today()) {
   if ((await page.getAttribute(toggle, 'aria-pressed')) !== 'true') {
     await page.click(toggle);
   }
-  await page.waitForSelector('.ql-editor', { timeout: 20000 });
+  // 表示側の本文も .ql-editor を名乗る(Quill の CSS を借りて字下げとマーカーを
+  // 描くため)ので、エディタは .quill-editor(DiaryEditor のルート)で絞る。
+  await page.waitForSelector('.quill-editor .ql-editor', { timeout: 20000 });
 }
 
 async function type(page, text) {
-  await page.click('.ql-editor');
+  await page.click('.quill-editor .ql-editor');
   await page.keyboard.type(text, { delay: 15 });
 }
 
@@ -146,7 +148,7 @@ const scenarios = {
     // 本当に保存されたか、リロードして本文が残っているかで確かめる。
     await page.reload({ waitUntil: 'networkidle' });
     await openEditor(page);
-    const text = await page.textContent('.ql-editor');
+    const text = await page.textContent('.quill-editor .ql-editor');
     check('save: リロード後も本文が残る', text.includes('ドライバからの書き込み'), JSON.stringify(text.slice(0, 40)));
     await ctx.close();
   },
@@ -266,17 +268,17 @@ const scenarios = {
 
     // 1. 今日以外の ✎ 編集 を押すとその日のエディタが開く。
     await page.click(`.diary[data-date="${target}"] .diary__edit-toggle`);
-    await page.waitForSelector(`.diary[data-date="${target}"] .ql-editor`, { timeout: 20000 });
+    await page.waitForSelector(`.diary[data-date="${target}"] .quill-editor`, { timeout: 20000 });
     check('toggle: 別の日の編集ボタンを押すとその日にエディタが開く', true, `target=${target}`);
 
     // 2. 開くエディタは常に高々1つ → 今日のエディタは閉じている。
-    const todayEditorGone = (await page.$(`.diary[data-date="${t}"] .ql-editor`)) === null;
+    const todayEditorGone = (await page.$(`.diary[data-date="${t}"] .quill-editor`)) === null;
     check('toggle: 別の日を開くと今日のエディタは閉じる（エディタは高々1つ）', todayEditorGone);
 
     // 3. target に打鍵すると保存され、target の欄にだけ ☑ が出る
     //    (document.querySelector('.save-status') だと日付降順の先頭 = 今日を
     //    拾ってしまうので、data-date で対象日に絞って見る)。
-    await page.click(`.diary[data-date="${target}"] .ql-editor`);
+    await page.click(`.diary[data-date="${target}"] .quill-editor .ql-editor`);
     await page.keyboard.type('別の日のトグルテスト', { delay: 15 });
     await page.waitForFunction((d) => {
       const el = document.querySelector(`.diary[data-date="${d}"] .save-status`);
@@ -287,7 +289,7 @@ const scenarios = {
 
     // 4. もう一度 ☑ 完了 を押すとエディタが消え、保存した本文が HTML で表示される。
     await page.click(`.diary[data-date="${target}"] .diary__edit-toggle`);
-    await page.waitForSelector(`.diary[data-date="${target}"] .ql-editor`, { state: 'detached', timeout: 20000 });
+    await page.waitForSelector(`.diary[data-date="${target}"] .quill-editor`, { state: 'detached', timeout: 20000 });
     const html = await page.$eval(`.diary[data-date="${target}"]`, (el) => el.textContent || '');
     check('toggle: 完了を押すとエディタが閉じ保存した本文が表示される', html.includes('別の日のトグルテスト'), html.slice(0, 60));
     await shot(page, 'toggle-2-closed');
