@@ -41,6 +41,28 @@ body {
   }
 }
 
+// iOS Safari は、フォーカスした入力欄の文字が 16px 未満だとページごと自動で
+// 拡大する。Quill の既定は .ql-container が 13px なので、iPhone でエディタを
+// タップするたびにズームしてしまう。16px 以上にすれば起きない (viewport に
+// maximum-scale を足しても止まるが、指でのピンチ拡大まで殺すので採らない)。
+//
+// 表示側 (DiaryEntry の .diary__body > .ql-editor) は .ql-container を持たず
+// body から 16px を継いでいるので、揃えると表示と編集で文字の大きさも一致する。
+//
+// #app を足して詳細度を上げてあるのは、quill の CSS の .ql-container (クラス
+// 1つ) と同点にして出力順に賭けないため。quill の CSS は DiaryEditor.vue の
+// script が import しているので、出力順はこちらの都合で決められない。
+#app .ql-container {
+  font-size: 1rem;
+}
+
+// リンク入力のツールチップの <input> も同じ理由で 13px。こちらは Quill が
+// 実行時に差し込む要素で、DiaryEditor.vue の scoped スタイルには data-v- 属性が
+// 付かず届かないので、下の z-index の指定と同じくここに置く。
+#app .ql-snow .ql-tooltip input[type=text] {
+  font-size: 1rem;
+}
+
 // 月一覧の sticky ヘッダ (MonthList の .month, z-index: 10) は、スクロールすると
 // エディタの上に白帯として重なる。Quill のリンク入力ツールチップと
 // ドロップダウンはそのままだと帯の裏に隠れて押せないので、前に出しておく。
