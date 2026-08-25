@@ -190,8 +190,17 @@ const DiaryEditor = defineComponent({
           }
         });
         // Update model if text changes
-        this.quill.on('text-change', () => {
+        this.quill.on('text-change', (_delta, _oldDelta, source) => {
           if(this.quill === null) {
+            return;
+          }
+          // 人の操作による変更だけを親へ流す。Quill は content watcher の
+          // dangerouslyPasteHTML / setText のような API 起因の書き込みでも
+          // text-change を投げるので、素通しすると「親が入れた本文」が
+          // 「ユーザーが書いた本文」として跳ね返る。別の端末で書かれた本文を
+          // 取り込んだ直後にそれをそのままサーバへ書き戻す、という往復が
+          // これで起きていた。
+          if(source !== 'user') {
             return;
           }
           // TODO: ここで取っているのは Quill の内部表現であって、単体で成立する

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
-import { shallowMount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
+import { mount, shallowMount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
+import Quill from 'quill'
 import IndexPage from '@/views/IndexPage.vue'
 import type * as protocol from 'server/protocol'
 
@@ -13,6 +14,7 @@ import type * as protocol from 'server/protocol'
 
 type FetchDeferred = {
   url: string,
+  method: string,
   resolve: (body: protocol.Diaries.Response) => void,
 }
 
@@ -26,9 +28,10 @@ type RouteUpdateHook = (this: unknown, route: RouteLike) => unknown
 
 function stubFetch(): Array<FetchDeferred> {
   const deferreds: Array<FetchDeferred> = []
-  vi.stubGlobal('fetch', (url: string) => new Promise((resolve) => {
+  vi.stubGlobal('fetch', (url: string, init?: { method?: string }) => new Promise((resolve) => {
     deferreds.push({
       url: url,
+      method: init?.method ?? 'get',
       resolve: (body) => resolve({
         ok: true,
         json: () => Promise.resolve(body),
@@ -246,5 +249,63 @@ describe('IndexPage.vue: 戻ってきたときの取り直し', () => {
     setVisibility('visible')
 
     expect(deferreds).toHaveLength(1)
+  })
+})
+
+describe('IndexPage.vue: 取り直しが書き戻しを誘発しない', () => {
+  // 退行テスト: Quill は dangerouslyPasteHTML のような API 起因の変更でも
+  // text-change を投げる。DiaryEditor がそれを素通しすると、取り直しで
+  // 入れた「別の端末の本文」が「ユーザーの編集」として親に伝わり、
+  // そのままサーバへ書き戻される。取り込み→保存の往復になり、updated が
+  // 無意味に進み、相手が編集中なら ping-pong になる。
+  //
+  // この経路は DiaryEditor が実際に存在しないと再現しないので、
+  // ここだけ shallowMount ではなく mount を使う。
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2025, 2, 10, 12, 0, 0))
+    // jsdom では Quill の focus/setSelection が落ちる。今日のエディタは
+    // mounted で focus() されるので、そこだけ差し替える。
+    vi.spyOn(Quill.prototype, 'focus').mockImplementation(() => {})
+    vi.spyOn(Quill.prototype, 'setSelection').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    restoreVisibility()
+  })
+
+  it('別の端末の本文を取り込んでも POST は飛ばない', async () => {
+    const deferreds = stubFetch()
+    const wrapper = mount(IndexPage, {
+      global: {
+        mocks: { $route: { params: { year: '2025', month: '03' }, path: '/2025/03' } },
+        stubs: { RouterLink: true },
+      },
+    })
+    deferreds[0].resolve(response(2025, 3, 10, '<p>もとの本文</p>'))
+    await flushPromises()
+    // Quill の初期化は requestAnimationFrame を挟む。
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(wrapper.findComponent({ name: 'quill-editor' }).exists()).toBe(true)
+
+    setVisibility('hidden')
+    vi.setSystemTime(new Date(2025, 2, 10, 13, 0, 0))
+    setVisibility('visible')
+    expect(deferreds).toHaveLength(2)
+
+    deferreds[1].resolve(response(2025, 3, 10, '<p>別の端末で書いた本文</p>'))
+    await flushPromises()
+    // 保存のデバウンス(200ms)を実時間で越えさせる。Date だけを固定して
+    // setTimeout は本物のままにしてあるのはこのため。
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    await flushPromises()
+
+    expect(deferreds.map((it) => it.method)).toEqual(['get', 'get'])
+    expect(wrapper.vm.pending.size).toBe(0)
+    expect(wrapper.vm.saving).toBe(false)
   })
 })
