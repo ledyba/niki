@@ -100,8 +100,9 @@ const today = () => {
 // 指定した日(既定は今日)の編集モードを開いて Quill が出るまで待つ。
 // 今日は IndexPage の editingDate 初期値なので、初回読み込み・リロード後・
 // 月の往復後のいずれでも既に aria-pressed="true" で開いており、click は通らず
-// 待つだけになる。click が実際に走るのは今日以外の日を渡したときで、いまの
-// 呼び出し元は 4 箇所とも既定引数(今日)。ガードは将来そう呼ぶときのために残す。
+// 待つだけになる。click が実際に走るのは今日以外の日を渡したときで、呼び出し元は
+// 3 箇所とも既定引数(今日)。今日以外を実際に押す toggle シナリオは、この関数を
+// 通さず対象日のトグルを直接 click している。
 async function openEditor(page, date = today()) {
   const toggle = `.diary[data-date="${date}"] .diary__edit-toggle`;
   await page.waitForSelector(toggle, { timeout: 20000 });

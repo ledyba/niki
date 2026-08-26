@@ -19,8 +19,8 @@ export default App;
 <style lang="scss">
 @use './styles/breakpoints' as bp;
 
-// 元は index.html の style 属性に書いていたもの。メディアクエリで上書きしたいので
-// こちらへ移した。
+// 余白と高さは index.html の style 属性ではなくここで持つ。属性に書くと
+// メディアクエリで上書きできず、狭い画面で余白を詰められない。
 html, body {
   margin: 0;
   padding: 0;

@@ -138,7 +138,7 @@ docker rm -f niki_dev_pg
 停止は起動したシェルで Ctrl-C。
 
 コードをいじりながら見るなら `make dev`（= `_scripts/dev.sh`）のほうが早い。server を一度
-ビルドしてから watcher を3本（`tsc --watch` / `vue-cli-service build --watch` /
+ビルドしてから watcher を3本（`tsc --watch` / `vite build --watch` /
 `ts-node-dev`）立ち上げる。ただし **postgres は面倒を見ない**ので、先に上の 1 の
 使い捨てコンテナを立ててから実行すること。DB が無いと API リクエストは
 エラーにならず**ハングする**。
@@ -178,7 +178,9 @@ cd client && npm run test:unit        # vitest run
   `DATABASE_HOST=127.0.0.1` で拾われる。**本番を停止したり向け先を変えたりしないこと。**
 - **ポートは 3000。** `main.ts` が `new Server(3000)` とハードコードしている。
   Dockerfile の `EXPOSE 8888`、`compose.yml` の `expose: 8888`、README の `:8888` は
-  すべて古い記述で実体と合っていない。
+  実体と合っていない（https://code.ledyba.org/ledyba/niki/issues/19）。`EXPOSE` と
+  compose の `expose:` は共有ネットワーク上では効かないメタデータなので、この食い違い
+  だけで疎通が壊れているわけではない。
 - **どの日も編集できる／編集モードは日ごとのトグル。** `DiaryEntry.vue` は
   `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
   Quill が描画され(`DiaryEditor` のルート = `.quill-editor`)、それ以外は
@@ -209,7 +211,8 @@ cd client && npm run test:unit        # vitest run
 - **`docker run` に `--user` を付けないとゴミが消せなくなる。** コンテナは既定で root
   なので、`-v "$PWD":/work` 越しに書かれる `var/shots/*.png` がホスト側に **root 所有**で
   残る。sudo が使えないと `rm -rf` も `git worktree remove` も
-  `Permission denied` で失敗する（実際に踏んだ）。`--user "$(id -u):$(id -g)"` で回避する。
+  `Permission denied` で失敗する（実際に踏んだ: https://code.ledyba.org/ledyba/niki/pulls/7）。
+  `--user "$(id -u):$(id -g)"` で回避する。
   Playwright 公式イメージは非 root でも問題なく動く（`HOME` の指定も不要）。
   もう作ってしまった場合はコンテナ経由で消す:
   `docker run --rm -v "$PWD/var":/v alpine rm -rf /v/shots`
@@ -221,10 +224,11 @@ cd client && npm run test:unit        # vitest run
   `package.json` の `exports` 経由で `server/dist/protocol.d.ts` に解決される。
   `server/dist` が無いと client は `TS2307: Cannot find module 'server/protocol'` で落ちる。
   上の Build の順序（server → client）はこのため。Dockerfile も dev.sh も同じ順序。
-- **`protocol.ts` の変更は client の型検査に即時反映されない。** fork-ts-checker が
-  `node_modules` 配下を監視しないので、`make dev` 中に `server/src/protocol.ts` を
-  編集しても client 側は古い `.d.ts` を見たまま（`TS2694: Namespace ... has no exported
-  member` になる）。client の watcher ごと再起動する。
+- **`make dev` は client の型を検査しない。** client 側の watcher は `vite build --watch`
+  で、esbuild は型を落とすだけで検査しない。共有型の `server/dist/protocol.d.ts` は
+  server の `watch:types`(`tsc --watch`)が更新し続けるので、`server/src/protocol.ts` を
+  触れば最新にはなるが、それを client が正しく使えているかは誰も見ていない。client の
+  型を確かめたいときは `cd client && npm run typecheck`(vue-tsc)を別途叩く。
 - **`make dev` を非対話で起動するなら `setsid` で包む。** 終了時の trap が `kill 0` で
   プロセスグループ全体を落とすが、非対話シェルから起動すると呼び出し元と同じ
   プロセスグループになるため、**呼び出し元のシェルごと道連れになる**。

@@ -12,10 +12,10 @@ set -o pipefail
 echo "building shared types..."
 (cd server && npm run build)
 
-# 以降 dist/ を作り直し続ける係。かつて独立した protocol パッケージが tsc --watch で
-# やっていた役で、下の server の watch は ts-node-dev が src から直接動かすため dist を
-# 吐かない。これで (a) protocol.ts を編集しても dist/protocol.d.ts が正しいままになり、
-# (b) ts-node-dev が読み込んだファイルだけでなくプロジェクト全体が型検査され続ける。
+# 以降 dist/ を作り直し続ける係。下の server の watch は ts-node-dev が src から直接
+# 動かすため dist を吐かない。これで (a) protocol.ts を編集しても dist/protocol.d.ts が
+# 正しいままになり、(b) ts-node-dev が読み込んだファイルだけでなくプロジェクト全体が
+# 型検査され続ける。
 #
 # ただし client 側の型検査は走らない: 下の client の watch は vite build --watch で、
 # vite (esbuild) は型を落とすだけで検査しない。client の型が知りたいときは
