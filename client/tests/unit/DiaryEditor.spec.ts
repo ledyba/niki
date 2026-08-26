@@ -106,7 +106,7 @@ describe('DiaryEditor.vue: 親から本文を差し替えたときのキャレ�
     await wrapper.setProps({ content: '<p>別の端末で書いた本文</p>' })
 
     // dangerouslyPasteHTML ならここで setSelection(0, 'silent') が呼ばれ、
-    // その中で root.focus() までされていた。
+    // その中で root.focus() までされる。
     expect(setSelection).not.toHaveBeenCalled()
   })
 
