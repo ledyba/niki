@@ -232,6 +232,35 @@ const DiaryEditor = defineComponent({
         this.quill.focus();
         this.quill.setSelection(this.quill.getLength(),0);
       }
+    },
+    // 親から渡された本文で中身を差し替える。
+    //
+    // clipboard.dangerouslyPasteHTML は使わない。あれは差し替えたあと必ず
+    // setSelection(0, SILENT) を呼ぶ (quill/modules/clipboard.js)。
+    // キャレットが本文の先頭へ飛ぶうえ、Quill の setNativeRange は
+    // 「フォーカスが無ければ root.focus() する」ので、こちらが触っていない
+    // エディタが勝手にフォーカスを奪う。別の端末で書かれた本文を取り込む
+    // 経路で、これが毎回起きていた。
+    //
+    // 中身の作り方は dangerouslyPasteHTML と同じ (convert して setContents
+    // するだけ) にしておき、キャレットの後始末だけ自分でやる。setContents は
+    // 選択範囲に触らないので、何もしなければフォーカスもキャレットも動かない。
+    replaceContents: function (html: string) {
+      const quill = this.quill;
+      if(quill === null) {
+        return;
+      }
+      // 差し替え前のキャレット。フォーカスが無ければ null。
+      const range = quill.getSelection();
+      quill.setContents(quill.clipboard.convert({ html: html, text: '' }), 'api');
+      if(range === null) {
+        // 誰も触っていないエディタ。フォーカスもキャレットも動かさない。
+        return;
+      }
+      // 元いた位置へ戻す。取り込んだ本文の方が短いことがあるので末尾に丸める
+      // (getLength() は末尾の改行を含むので 1 引く)。
+      const last = Math.max(quill.getLength() - 1, 0);
+      quill.setSelection(Math.min(range.index, last), 0, 'silent');
     }
   },
   watch: {
@@ -245,7 +274,7 @@ const DiaryEditor = defineComponent({
         }
         if (newVal && newVal !== oldVal) {
           this.content_ = newVal
-          this.quill.clipboard.dangerouslyPasteHTML(newVal);
+          this.replaceContents(newVal);
         } else if (!newVal) {
           this.content_ = ''
           this.quill.setText('')
