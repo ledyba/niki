@@ -16,7 +16,7 @@ make build
 make up
 ```
 
-then open `http://<your-host>:8888`.
+then open `http://<your-host>:3000`.
 
 ## Security
 
@@ -27,7 +27,7 @@ To protect, please change these line from `docker-compose.yml`:
   web:
     ...
     ports:
-      - '127.0.0.1:8888:8888' # niki is accessible only from localhost.
+      - '127.0.0.1:3000:3000' # niki is accessible only from localhost.
 ```
 
 Then, make a reverse proxy to `niki` with some authentication.
@@ -64,7 +64,7 @@ server {
     proxy_set_header X-Forwarded-Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_redirect http:// https://;
-    proxy_pass http://127.0.0.1:8888/;
+    proxy_pass http://127.0.0.1:3000/;
   }
 }
 
