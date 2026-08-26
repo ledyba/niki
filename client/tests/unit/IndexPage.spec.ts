@@ -253,9 +253,9 @@ describe('IndexPage.vue: 戻ってきたときの取り直し', () => {
 })
 
 describe('IndexPage.vue: 取り直しが書き戻しを誘発しない', () => {
-  // 退行テスト: Quill は dangerouslyPasteHTML のような API 起因の変更でも
-  // text-change を投げる。DiaryEditor がそれを素通しすると、取り直しで
-  // 入れた「別の端末の本文」が「ユーザーの編集」として親に伝わり、
+  // 退行テスト: Quill は replaceContents の setContents のような API 起因の
+  // 変更でも text-change を投げる。DiaryEditor がそれを素通しすると、
+  // 取り直しで入れた「別の端末の本文」が「ユーザーの編集」として親に伝わり、
   // そのままサーバへ書き戻される。取り込み→保存の往復になり、updated が
   // 無意味に進み、相手が編集中なら ping-pong になる。
   //

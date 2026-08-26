@@ -194,12 +194,11 @@ const DiaryEditor = defineComponent({
           if(this.quill === null) {
             return;
           }
-          // 人の操作による変更だけを親へ流す。Quill は content watcher の
-          // dangerouslyPasteHTML / setText のような API 起因の書き込みでも
-          // text-change を投げるので、素通しすると「親が入れた本文」が
-          // 「ユーザーが書いた本文」として跳ね返る。別の端末で書かれた本文を
-          // 取り込んだ直後にそれをそのままサーバへ書き戻す、という往復が
-          // これで起きていた。
+          // 人の操作による変更だけを親へ流す。Quill は replaceContents の
+          // setContents や setText のような API 起因の書き込みでも
+          // text-change を投げる。素通しすると「親が入れた本文」が
+          // 「ユーザーが書いた本文」として親へ跳ね返り、取り込んだばかりの
+          // 本文をそのままサーバへ書き戻してしまう。
           if(source !== 'user') {
             return;
           }
@@ -232,6 +231,40 @@ const DiaryEditor = defineComponent({
         this.quill.focus();
         this.quill.setSelection(this.quill.getLength(),0);
       }
+    },
+    // 親から渡された本文で中身を差し替える。
+    //
+    // clipboard.dangerouslyPasteHTML は使わない。あれは差し替えたあと必ず
+    // setSelection(0, SILENT) を呼び (quill/modules/clipboard.js)、キャレットを
+    // 本文の先頭へ飛ばす。しかも Quill の setNativeRange は「フォーカスが
+    // 無ければ root.focus() する」ため (quill/core/selection.js)、触っていない
+    // エディタのフォーカスまで奪う。
+    //
+    // 中身の作り方は dangerouslyPasteHTML と同じ (convert して setContents
+    // するだけ) にして、キャレットの後始末だけ自分でやる。setContents は
+    // 選択範囲に触らないので、何もしなければフォーカスもキャレットも動かない。
+    //
+    // 差分を計算して updateContents で当てる形も採らない。キャレットを変更
+    // ごしに transform できて筋は良いが、clipboard.convert の返す delta は
+    // getContents と正規化が違う (末尾の改行が無い、箇条書きの list 属性が
+    // 改行だけでなく本文の文字にも乗る)。そこから作った delta を当てると
+    // 箇条書きで Quill が返ってこない。
+    replaceContents: function (html: string) {
+      const quill = this.quill;
+      if(quill === null) {
+        return;
+      }
+      // 差し替え前のキャレット。フォーカスが無ければ null。
+      const range = quill.getSelection();
+      quill.setContents(quill.clipboard.convert({ html: html, text: '' }), 'api');
+      if(range === null) {
+        // 誰も触っていないエディタ。フォーカスもキャレットも動かさない。
+        return;
+      }
+      // 元いた位置へ戻す。取り込んだ本文の方が短いことがあるので末尾に丸める
+      // (getLength() は末尾の改行を含むので 1 引く)。
+      const last = Math.max(quill.getLength() - 1, 0);
+      quill.setSelection(Math.min(range.index, last), 0, 'silent');
     }
   },
   watch: {
@@ -245,7 +278,7 @@ const DiaryEditor = defineComponent({
         }
         if (newVal && newVal !== oldVal) {
           this.content_ = newVal
-          this.quill.clipboard.dangerouslyPasteHTML(newVal);
+          this.replaceContents(newVal);
         } else if (!newVal) {
           this.content_ = ''
           this.quill.setText('')
