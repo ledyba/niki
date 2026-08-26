@@ -10,7 +10,7 @@ services:
       - 'DATABASE_HOST=niki_postgres'
     restart: always
     expose:
-      - '8888'
+      - '3000'
     networks:
       - 'niki-link'
       - 'planet-link'

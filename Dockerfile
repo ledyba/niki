@@ -13,7 +13,7 @@ FROM gcr.io/distroless/nodejs24-debian12:latest
 
 COPY --chown=nonroot:nonroot --from=builder /app /app
 
-EXPOSE 8888
+EXPOSE 3000
 
 WORKDIR /app/server
 USER nonroot

@@ -177,10 +177,6 @@ cd client && npm run test:unit        # vitest run
   ホストにポートを公開していないので、`-p 127.0.0.1:5432:5432` で立てた使い捨て側が
   `DATABASE_HOST=127.0.0.1` で拾われる。**本番を停止したり向け先を変えたりしないこと。**
 - **ポートは 3000。** `main.ts` が `new Server(3000)` とハードコードしている。
-  Dockerfile の `EXPOSE 8888`、`compose.yml` の `expose: 8888`、README の `:8888` は
-  実体と合っていない（https://code.ledyba.org/ledyba/niki/issues/19）。`EXPOSE` と
-  compose の `expose:` は共有ネットワーク上では効かないメタデータなので、この食い違い
-  だけで疎通が壊れているわけではない。
 - **どの日も編集できる／編集モードは日ごとのトグル。** `DiaryEntry.vue` は
   `isToday` では分岐しない。各日の見出し右の `.diary__edit-toggle` を押した日だけ
   Quill が描画され(`DiaryEditor` のルート = `.quill-editor`)、それ以外は
