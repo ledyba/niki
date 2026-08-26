@@ -23,6 +23,12 @@ import { formatMonth, formatDate, todayDate, buildMonths, buildDiaries } from '@
 
 const UNSAVED_WARNING = '保存されていない変更、または保存に失敗した変更があります。このページを離れてもよろしいですか？';
 
+// この時間以上画面から離れていたら、復帰したときに日記を取り直す。
+// iOS Safari は共有シートを閉じた・タブ切替画面を開いた程度でも
+// visibilitychange を投げてくるので、閾値なしでは編集中に何度も
+// 取り直しが走る。取り直しは GET 1本なので長く待つ必要はない。
+const REFETCH_AFTER_HIDDEN_MS = 60 * 1000;
+
 function parseIntArg(str: string): number | null {
   const parsed = parseInt(str, 10);
   if(isNaN(parsed)) {
@@ -73,6 +79,7 @@ const IndexPage = defineComponent({
   data: function() {
     const year: number = parseIntArg(this.$route.params.year as string) || dayjs().year();
     const month: number = parseIntArg(this.$route.params.month as string) || dayjs().month() + 1;
+    const today = todayDate();
     return {
       year: year,
       month: month,
@@ -80,7 +87,12 @@ const IndexPage = defineComponent({
       diaries: Array<protocol.Entity.Diary>(),
       // 編集中の日('YYYY/MM/DD')。一度に開くエディタは高々1つ。
       // 今日は最初から編集モードで開く。
-      editingDate: todayDate() as string | null,
+      editingDate: today as string | null,
+      // このページが「今日」だと思っている日。開いたまま日付をまたぐと
+      // ずれるので、復帰時に実際の今日と突き合わせて振り直す。
+      today: today,
+      // 画面から離れた時刻(ms)。離れていない間は null。
+      hiddenAt: null as number | null,
       updateTicket: null as number | null,
       // 保存を直列化する: 常に高々1本だけ in-flight にする。
       saving: false,
@@ -100,16 +112,29 @@ const IndexPage = defineComponent({
       statuses: new Map<string, SaveStatus>(),
       saveHandler_: this.saveHandler.bind(this),
       beforeUnloadHandler_: this.beforeUnloadHandler.bind(this),
+      visibilityHandler_: this.visibilityHandler.bind(this),
+      pageShowHandler_: this.pageShowHandler.bind(this),
+      pageHideHandler_: this.pageHideHandler.bind(this),
     };
   },
   beforeMount: function() {
     window.addEventListener('keydown', this.saveHandler_);
     window.addEventListener('beforeunload', this.beforeUnloadHandler_);
+    // 別の端末で書いた本文を、戻ってきたときに反映するための2本。
+    // 担当する経路が違うので両方要る:
+    //   - 別アプリへ行って戻る / タブを切り替える → visibilitychange だけ
+    //   - 他サイトへ移動して「戻る」(bfcache 復元) → pageshow だけ
+    document.addEventListener('visibilitychange', this.visibilityHandler_);
+    window.addEventListener('pageshow', this.pageShowHandler_);
+    window.addEventListener('pagehide', this.pageHideHandler_);
     this.updateDiaries();
   },
   beforeUnmount: function() {
     window.removeEventListener('keydown', this.saveHandler_);
     window.removeEventListener('beforeunload', this.beforeUnloadHandler_);
+    document.removeEventListener('visibilitychange', this.visibilityHandler_);
+    window.removeEventListener('pageshow', this.pageShowHandler_);
+    window.removeEventListener('pagehide', this.pageHideHandler_);
   },
   beforeRouteLeave: function() {
     if (this.hasUnsavedRisk() && !window.confirm(UNSAVED_WARNING)) {
@@ -124,7 +149,8 @@ const IndexPage = defineComponent({
     this.resetSaveState();
     // 今月に戻れば今日が開き、それ以外の月に移れば何も開かない、というのが
     // 「初期値が今日」だけで自然に成り立つ。テンプレート側に分岐は要らない。
-    this.editingDate = todayDate();
+    this.today = todayDate();
+    this.editingDate = this.today;
     this.year = parseIntArg(route.params.year as string) || dayjs().year();
     this.month = parseIntArg(route.params.month as string) || dayjs().month() + 1;
     this.updateDiaries();
@@ -164,6 +190,61 @@ const IndexPage = defineComponent({
         // 一部ブラウザでは returnValue の設定が必要。
         event.returnValue = '';
       }
+    },
+    // 画面から離れた時刻を記録する。visibilitychange(hidden) と pagehide の
+    // 両方で打つ。bfcache から復元される経路は hidden を経ずに pageshow で
+    // 戻ってくるので、pagehide で打っておかないと基準時刻が無く、
+    // 「どれだけ離れていたか」を判定できない。
+    pageHideHandler: function () {
+      this.hiddenAt = Date.now();
+    },
+    visibilityHandler: function () {
+      if (document.visibilityState === 'hidden') {
+        this.hiddenAt = Date.now();
+        return;
+      }
+      this.refetchIfStale();
+    },
+    pageShowHandler: function (event: PageTransitionEvent) {
+      // bfcache からの復元だけが対象。通常の読み込みは beforeMount が
+      // すでに updateDiaries() を呼んでいる。
+      if (event.persisted) {
+        this.refetchIfStale();
+      }
+    },
+    // 戻ってきたとき、十分長く離れていたなら日記を取り直す。
+    // 目的は「閉じている間に別の端末で書いた本文を反映する」こと。
+    // リロードではなく取り直しなのは、スクロール位置・見ている月・
+    // エディタの開閉をそのまま保てるため。DiaryList は日付を key に
+    // しているのでエディタは remount されず、DiaryEditor の content
+    // watcher も本文が実際に変わったときだけ発火する。
+    refetchIfStale: function () {
+      if (this.hiddenAt === null) {
+        // 離れていない。復元経路が pageshow と visibilitychange の
+        // 両方を投げてきたときの二重実行もここで落ちる。
+        return;
+      }
+      const hiddenFor = Date.now() - this.hiddenAt;
+      this.hiddenAt = null;
+      if (hiddenFor < REFETCH_AFTER_HIDDEN_MS) {
+        return;
+      }
+      if (this.hasUnsavedRisk()) {
+        // 未保存の編集がある間は取り直さない。サーバの本文で上書きすると
+        // まだ送れていない編集が消える。保存が通れば次の復帰で拾える。
+        return;
+      }
+      // 日をまたいでいたらエディタも今日に合わせる。ただし「読み込んだ
+      // 時点の今日」を指したままのときだけ動かす。ユーザーが意図して
+      // 開いた過去の日を勝手に閉じないため。
+      const today = todayDate();
+      if (today !== this.today) {
+        if (this.editingDate === this.today) {
+          this.editingDate = today;
+        }
+        this.today = today;
+      }
+      this.updateDiaries();
     },
     resetSaveState: function () {
       // 月の切り替えなどで保存文脈を破棄する。in-flightな保存が
