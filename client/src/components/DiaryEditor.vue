@@ -81,7 +81,7 @@
 
 <script lang="ts">
 // https://github.com/surmon-china/vue-quill-editor
-import { defineComponent } from 'vue';
+import { defineComponent, markRaw } from 'vue';
 import Quill, {type QuillOptions} from 'quill';
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
@@ -177,8 +177,15 @@ const DiaryEditor = defineComponent({
           //this.quill.clipboard.dangerouslyPasteHTML(this.content);
           (this.$refs.editor as HTMLDivElement).innerHTML = this.content;
         }
-        // Instance
-        this.quill = new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement, this.$el as HTMLElement));
+        // markRaw で包む。data に素のまま置くと Vue が reactive の Proxy に包み、
+        // this.quill 経由で呼んだメソッドには this が Proxy のまま Quill の内部まで
+        // 伝わる。Quill には「その blot が自分の scroll に属するか」を同一性で見る
+        // 箇所があり (ScrollBlot#find の `blot.scroll === this`)、blot 側が持つのは
+        // 生のインスタンスなので Proxy だと必ず食い違って find が null を返す。
+        // その戻り値は Selection#normalizedToRange が null チェック無しに参照するため、
+        // キャレットに触る API (focus / getSelection / setSelection) が軒並み
+        // TypeError で落ちる。テンプレートからは参照しないので、反応性は要らない。
+        this.quill = markRaw(new Quill(this.$refs.editor as HTMLElement, buildOptions(this.$refs.toolbar as HTMLElement, this.$el as HTMLElement)));
         this.quill.blur();
         this.quill.enable(!this.disabled);
         // Mark model as touched if editor lost focus
@@ -226,11 +233,20 @@ const DiaryEditor = defineComponent({
         this.$emit('ready', this.quill);
       }
     },
+    // 開いた日記の続きを書けるよう、キャレットを本文の末尾に置く。
+    //
+    // quill.focus() は呼ばない。あれは savedRange (初期値は先頭) を復元してから
+    // フォーカスするので、末尾へ動かす前にキャレットが一度先頭へ飛ぶ。
+    // setSelection は setNativeRange の中で「フォーカスが無ければ root.focus()」を
+    // するので (quill/core/selection.js)、これだけでフォーカスも取れる。
     focus: function () {
-      if(this.quill !== null) {
-        this.quill.focus();
-        this.quill.setSelection(this.quill.getLength(),0);
+      const quill = this.quill;
+      if(quill === null) {
+        return;
       }
+      // getLength() は末尾の改行を含むぶん本文より1つ大きいが、Quill 側が
+      // scroll.length() - 1 に丸めるのでそのまま渡してよい (Selection#rangeToNative)。
+      quill.setSelection(quill.getLength(), 0);
     },
     // 親から渡された本文で中身を差し替える。
     //

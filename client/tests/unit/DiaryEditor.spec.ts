@@ -1,5 +1,6 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { isReactive } from 'vue'
 import Quill from 'quill'
 import DiaryEditor from '@/components/DiaryEditor.vue'
 
@@ -133,5 +134,65 @@ describe('DiaryEditor.vue: 親から本文を差し替えたときのキャレ�
     // 'みじかい' は4文字。getLength() は末尾の改行を含めて5を返す。
     expect(quill.getLength()).toBe(5)
     expect(setSelection).toHaveBeenCalledWith(4, 0, 'silent')
+  })
+})
+
+describe('DiaryEditor.vue: 開いたときのキャレット', () => {
+  // 日記は続きを書き足す用途が多いので、開いた瞬間のキャレットは本文の末尾に置く。
+  const mounted: Array<{ unmount: () => void }> = []
+  afterEach(() => {
+    while (mounted.length > 0) {
+      mounted.pop()?.unmount()
+    }
+  })
+
+  // jsdom の Range は getBoundingClientRect を持たない。Quill は setSelection の
+  // 最後に scrollSelectionIntoView からこれを呼ぶので、生やしておかないと
+  // requestAnimationFrame の中から未処理の TypeError が飛ぶ(キャレット自体は
+  // その前に動いているので、テストの判定には出てこない)。
+  const emptyRect = () => ({
+    top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0,
+    toJSON: () => ({}),
+  }) as DOMRect
+  beforeAll(() => {
+    Range.prototype.getBoundingClientRect = emptyRect
+  })
+  afterAll(() => {
+    delete (Range.prototype as Partial<Range>).getBoundingClientRect
+  })
+
+  function mountEditor(content: string) {
+    // focused: true で mounted() の focus 経路を通す。実際にフォーカスを取るので
+    // document に繋いでおく必要がある。
+    const wrapper = mount(DiaryEditor, {
+      props: { content: content, focused: true },
+      attachTo: document.body,
+    })
+    mounted.push(wrapper)
+    return wrapper
+  }
+
+  function quillOf(wrapper: { vm: unknown }): Quill {
+    return (wrapper.vm as unknown as { quill: Quill }).quill
+  }
+
+  function nextFrame(): Promise<void> {
+    return new Promise((resolve) => window.requestAnimationFrame(() => resolve()))
+  }
+
+  it('data に置いた Quill は反応性を持たない', () => {
+    // 素のまま data に置くと Vue が reactive の Proxy に包み、this.quill 経由の
+    // 呼び出しで Quill 内部の同一性判定 (ScrollBlot#find の `blot.scroll === this`)
+    // が崩れる。キャレットに触る API が丸ごと TypeError で落ちるので、
+    // 「Proxy になっていないこと」を直接見張る。
+    expect(isReactive(quillOf(mountEditor('<p>まえに書いた本文</p>')))).toBe(false)
+  })
+
+  it('本文があるときは末尾にキャレットを置く', async () => {
+    const wrapper = mountEditor('<p>まえに書いた本文</p>')
+    await nextFrame()
+    const quill = quillOf(wrapper)
+    // getLength() は末尾の改行を含むので、キャレットが立てる最大の位置はその1つ手前。
+    expect(quill.getSelection()).toEqual({ index: quill.getLength() - 1, length: 0 })
   })
 })
